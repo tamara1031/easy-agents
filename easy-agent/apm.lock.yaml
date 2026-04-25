@@ -1,10 +1,10 @@
 lockfile_version: '1'
-generated_at: '2026-04-25T16:00:06.893521+00:00'
+generated_at: '2026-04-25T16:01:00.038176+00:00'
 apm_version: 0.9.2
 dependencies:
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 8aae19d4f1459d728e5c933eca3a00326529127b
+  resolved_commit: d6413aca7ea1f480d944582e6ec89a15b17a9303
   resolved_ref: main
   virtual_path: advisor
   is_virtual: true
@@ -20,7 +20,7 @@ dependencies:
   content_hash: sha256:796b490c97e6ccf1f48977915c1f122356c0654af52b8d9b3d061196da6661e7
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 8aae19d4f1459d728e5c933eca3a00326529127b
+  resolved_commit: d6413aca7ea1f480d944582e6ec89a15b17a9303
   resolved_ref: main
   virtual_path: memoir
   is_virtual: true
