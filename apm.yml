@@ -2,6 +2,7 @@ name: easy-agent
 version: 0.1.0
 description: APM project for easy-agent
 author: tamara1031
+target: [claude, copilot]
 dependencies:
   apm:
     - git: https://github.com/tamara1031/easy-agents
