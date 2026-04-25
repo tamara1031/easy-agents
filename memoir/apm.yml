@@ -2,7 +2,9 @@ name: memoir
 version: 0.1.0
 description: ChromaDB ベースのベクター長期記憶パッケージ。ナレッジの保存・検索・更新・削除を自然言語クエリで行い、Claude Code スキルとして統合される
 author: tamara1031
+license: MIT
 target: [claude, copilot]
+type: hybrid
 dependencies:
   apm: []
   mcp: []

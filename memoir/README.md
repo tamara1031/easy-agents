@@ -217,8 +217,7 @@ python skills/long-term-memory/scripts/memory_delete.py --tag "obsolete" --confi
 ```
 memoir/
 ├── README.md                              # このファイル
-├── apm.yml                                # APM プロジェクト設定
-├── apm.lock.yaml                          # 依存バージョンロックファイル
+├── apm.yml                                # APM パッケージ設定（宣言依存なし）
 ├── plugin.json                            # プラグインメタデータ
 └── skills/
     └── long-term-memory/

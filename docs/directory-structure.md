@@ -4,46 +4,45 @@
 
 ```
 easy-agents-hub/
-├── .claude/
-│   └── skills/
-│       └── empirical-prompt-tuning/   # APMで管理される共有スキル
-├── apm_modules/                        # APM依存モジュール (git-ignored)
-├── apm.yml                             # ワークスペース APM設定
+├── apm.yml                             # ワークスペース APM 設定
 ├── apm.lock.yaml                       # 依存ロックファイル
-├── .gitmodules                         # サブモジュール定義
+├── .gitignore                          # Git 管理除外設定
 ├── docs/                               # 本ドキュメント群
 │   ├── README.md
 │   ├── directory-structure.md
 │   ├── agents.md
 │   ├── skills.md
 │   ├── dependencies.md
-│   └── adr/
-├── easy-agent/                         # [submodule] コアフレームワーク
-├── advisor/                            # [submodule] アドバイザー
-├── parliament/                         # [submodule] 合意形成
-├── taskforce/                          # [submodule] タスク実行
-└── memoir/                             # [submodule] 長期記憶
+│   └── adr/                            # Architecture Decision Records
+├── easy-agent/                         # コアオーケストレーター
+├── advisor/                            # 戦略アドバイザー (Opus)
+├── parliament/                         # 合意形成 (議会モデル)
+├── taskforce/                          # 階層型タスク実行
+└── memoir/                             # ベクター長期記憶
 ```
 
-## 各サブモジュールの構成パターン
+`apm install` 実行時にルートワークスペースが各サブモジュールを APM パッケージとして解決する。サブモジュールは git submodule ではなく単一リポジトリ内のディレクトリとして管理されている。
 
-全モジュールは共通の APM パッケージ構造に従います。
+## 各サブパッケージの共通構成パターン
+
+全パッケージは共通の APM パッケージ構造に従います。
 
 ```
-<module>/
-├── MANIFEST.json          # エージェント・スキル宣言
-├── plugin.json            # Claude プラグインメタデータ
-├── apm.yml                # APMパッケージ設定・依存関係
-├── apm.lock.yaml          # 依存バージョンロック
-├── README.md              # (現状空)
-├── agents/                # エージェント定義 (*.agent.md)
+<package>/
+├── plugin.json            # Claude プラグインメタデータ (name/version/description/author/license)
+├── apm.yml                # APM パッケージ設定・依存関係
+├── README.md              # パッケージ概要・利用方法
+├── .gitignore             # APM コンパイル成果物除外
+├── .apm/                  # APM コンパイル成果物 (.gitkeep のみ追跡。中身は git-ignored)
+├── agents/                # エージェント定義 (*.agent.md)         ※ memoir には存在しない
 └── skills/
     └── <skill-name>/
         ├── SKILL.md       # スキル本体ドキュメント
-        ├── schemas/       # JSON スキーマ (入出力契約)
-        ├── templates/     # テンプレートファイル
-        ├── references/    # 参考・補助ドキュメント
-        └── scripts/       # 実行スクリプト (memoir のみ)
+        ├── schemas/       # JSON スキーマ (入出力契約)            ※ parliament / taskforce のみ
+        ├── templates/     # テンプレート / 定義集                 ※ parliament / taskforce のみ
+        ├── references/    # 参考・補助ドキュメント                ※ advisor のみ
+        ├── docker/        # Docker Compose 定義                   ※ memoir のみ
+        └── scripts/       # 実行スクリプト                        ※ memoir のみ
 ```
 
 ## モジュール別ファイルツリー
@@ -53,28 +52,26 @@ easy-agents-hub/
 easy-agent/
 ├── agents/
 │   └── easy-agent.agent.md         # 統合オーケストレーター定義
-├── .github/skills/
-│   └── empirical-prompt-tuning/    # (git-ignored)
-├── MANIFEST.json
+├── apm.yml                         # 依存: advisor, parliament, taskforce, memoir
 ├── plugin.json
-├── apm.yml
-└── apm.lock.yaml
+├── README.md
+└── .gitignore
 ```
 
 ### advisor
 ```
 advisor/
 ├── agents/
-│   └── advisor.agent.md            # アドバイザーエージェント定義
+│   └── advisor.agent.md            # Advisor エージェント定義 (Opus)
 ├── skills/
 │   └── call-advisor/
-│       ├── SKILL.md                # call-advisorスキル
+│       ├── SKILL.md                # call-advisor スキル
 │       └── references/
-│           └── prompt-template.md  # 相談プロンプト例5件
-├── MANIFEST.json
+│           └── prompt-template.md  # 相談プロンプト例集
+├── apm.yml                         # 宣言依存なし
 ├── plugin.json
-├── apm.yml                         # 依存: easy-agent, memoir, parliament, taskforce
-└── apm.lock.yaml
+├── README.md
+└── .gitignore
 ```
 
 ### parliament
@@ -87,14 +84,15 @@ parliament/
 │   └── call-parliament/
 │       ├── SKILL.md
 │       ├── schemas/
-│       │   ├── member_message.json      # 議員発言フォーマット
-│       │   ├── chairperson_output.json  # 議長出力フォーマット
+│       │   ├── member_message.json      # 議員発言スキーマ
+│       │   ├── chairperson_output.json  # 議長出力スキーマ
 │       │   └── orchestrator_state.json  # 状態管理スキーマ
 │       └── templates/
 │           └── stance_definitions.md    # スタンス定義
-├── MANIFEST.json
+├── apm.yml                              # 宣言依存なし
 ├── plugin.json
-└── apm.yml
+├── README.md
+└── .gitignore
 ```
 
 ### taskforce
@@ -113,9 +111,10 @@ taskforce/
 │       └── templates/
 │           ├── checklist.md
 │           └── status_definitions.md
-├── MANIFEST.json
+├── apm.yml                          # 宣言依存なし
 ├── plugin.json
-└── apm.yml
+├── README.md
+└── .gitignore
 ```
 
 ### memoir
@@ -123,7 +122,7 @@ taskforce/
 memoir/
 ├── skills/
 │   └── long-term-memory/
-│       ├── SKILL.md                    # スキル定義 (324行・日本語)
+│       ├── SKILL.md                    # スキル定義 (日本語)
 │       ├── docker/
 │       │   └── docker-compose.yml      # ChromaDB コンテナ
 │       └── scripts/
@@ -132,7 +131,10 @@ memoir/
 │           ├── memory_search.py        # 検索
 │           ├── memory_update.py        # 更新
 │           └── memory_delete.py        # 削除
-├── MANIFEST.json
+├── apm.yml                             # 宣言依存なし
 ├── plugin.json
-└── apm.yml
+├── README.md
+└── .gitignore
 ```
+
+`memoir` は他パッケージと異なり `agents/` ディレクトリを持たず、`scripts/` 経由で ChromaDB 操作を実行するスキル単独パッケージとして構成される。

@@ -39,14 +39,17 @@
 
 ## 前提条件・依存関係
 
-`apm.yml` に定義された以下のパッケージが必要です。
+`advisor` は **APM 宣言依存を持たない独立パッケージ**です（`apm.yml` の `dependencies.apm: []`）。単独でインストール可能で、呼び出し元エージェントからサブエージェントとして起動されます。
 
-| パッケージ | 用途 |
-| :--- | :--- |
-| [easy-agent](https://github.com/easy-agents/easy-agent) | エージェント基盤 |
-| [memoir](https://github.com/easy-agents/memoir) | コンテキスト管理・要約 |
-| [parliament](https://github.com/easy-agents/parliament) | 多角的な設計合議（ESCALATE 先） |
-| [taskforce](https://github.com/easy-agents/taskforce) | 並列ワークストリーム委譲（ESCALATE 先） |
+### 実行時の連携先（宣言依存ではない）
+
+`advisor` は以下のパッケージと実行時に協調動作しますが、APM レベルでは独立しています。
+
+| パッケージ | 連携の種類 | 役割 |
+| :--- | :--- | :--- |
+| `easy-agent` | 呼び出し元 | Phase Gate 等で `call-advisor` 経由で起動する |
+| `parliament` | エスカレーション先 | `<verdict>ESCALATE</verdict>` + `<escalation_target>parliament</escalation_target>` で委譲 |
+| `taskforce` | エスカレーション先 | `<verdict>ESCALATE</verdict>` + `<escalation_target>hierarchy</escalation_target>` で委譲 |
 
 ---
 

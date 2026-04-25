@@ -2,31 +2,39 @@
 
 ## 依存グラフ
 
-[TODO]:FIX 
-
 ```
                      ユーザー
                         ↓
-              ┌─────────────────┐
-              │   easy-agent    │  (統合オーケストレーター)
-              │  user-invocable │
-              └────────┬────────┘
-─────────┼───────────┐
-         ↓           ↓
-  ┌──────────┐  ┌──────────┐
-  │parliament│  │ taskforce│
-  │          │  │          │
-  └──────────┘  └──────────┘
-
-
-memoir, advisor は独立モジュール
+              ┌──────────────────┐
+              │   easy-agent     │  (統合オーケストレーター・user-invocable)
+              └────────┬─────────┘
+                       │ APM 宣言依存
+        ┌──────────────┼──────────────┬──────────────┐
+        ↓              ↓              ↓              ↓
+  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+  │ advisor  │  │parliament│  │taskforce │  │  memoir  │
+  └──────────┘  └──────────┘  └──────────┘  └──────────┘
 ```
+
+`easy-agent` が他 4 モジュールを APM 宣言依存として束ねる。サブモジュール同士は APM レベルでは独立しており、実行時の呼び出し関係（後述）でのみ結びつく。
 
 ## APM 宣言依存関係
 
-[TODO]
+各モジュールの `apm.yml` の `dependencies.apm` フィールドに基づく宣言依存。
+
+| モジュール | 宣言依存 (apm) |
+|---|---|
+| `easy-agent` | `advisor`, `parliament`, `taskforce`, `memoir` |
+| `advisor` | なし |
+| `parliament` | なし |
+| `taskforce` | なし |
+| `memoir` | なし |
+
+ルートワークスペース (`apm.yml`) は `easy-agent` のみを宣言依存とし、`easy-agent` の依存解決を通じて全モジュールがインストールされる。
 
 ## エージェント間の呼び出し関係
+
+宣言依存とは別に、実行時にはエージェントが互いをサブエージェントとして起動する。
 
 ### easy-agent → サブエージェント
 
@@ -37,6 +45,8 @@ memoir, advisor は独立モジュール
 | `advisor` | Phase Gate / 判断が必要な局面 | call-advisor |
 
 ### advisor → エスカレーション先
+
+`advisor` 自体はツールを持たないが、`<verdict>ESCALATE</verdict>` を返した際に呼び出し元エージェントへ次の委譲先を指示する。
 
 | 判定 | エスカレーション先 |
 |---|---|
@@ -78,5 +88,5 @@ call-hierarchy (Orchestrator)
 
 | モジュール | 外部依存 |
 |---|---|
-| memoir | Docker, ChromaDB 0.6.3, chromadb Python package, ONNX runtime |
-| その他全モジュール | なし (純粋なMarkdown/JSON定義) |
+| memoir | Docker, ChromaDB 0.6.3, chromadb Python パッケージ, ONNX runtime |
+| その他全モジュール | なし (純粋な Markdown / JSON 定義) |
