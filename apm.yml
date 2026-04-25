@@ -1,0 +1,15 @@
+name: easy-agent
+version: 0.1.0
+description: APM project for easy-agent
+author: tamara1031
+dependencies:
+  apm:
+    - git: https://github.com/mizchi/skills.git
+      path: empirical-prompt-tuning
+      ref: main
+    - git: https://github.com/easy-agents/easy-agent.git
+      ref: main
+  mcp: []
+scripts:
+  install: apm install --no-policy --target copilot,claude
+  compile: apm compile --target copilot,claude

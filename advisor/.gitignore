@@ -1,0 +1,5 @@
+.claude/
+.github/skills/
+
+# APM dependencies
+apm_modules/

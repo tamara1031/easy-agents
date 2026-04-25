@@ -1,0 +1,16 @@
+name: easy-agent
+version: 0.1.0
+description: ユニバーサルエントリーポイント。タスクを3軸（曖昧度×TaskScale×TaskType）で分類し Phase Pipeline を構成し、advisor・parliament・taskforce を組み合わせて自律的にタスクを完遂する
+author: tamara1031
+dependencies:
+  apm:
+    - git: https://github.com/easy-agents/advisor
+      ref: 0fdcccc46c5687d739f9a4c090d9bd0f316a63ad
+    - git: https://github.com/easy-agents/parliament
+      ref: 9e77f576975a1587a4dd0c45c8207cdc51a7a362
+    - git: https://github.com/easy-agents/taskforce
+      ref: ba84a407791e46fb818cb8b520f61361b82a3832
+    - git: https://github.com/easy-agents/memoir
+      ref: ec31c315bd25c101dd3d1d93e4b2312adba4884f
+  mcp: []
+scripts: {}

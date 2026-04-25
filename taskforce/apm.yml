@@ -1,0 +1,10 @@
+name: taskforce
+version: 0.1.0
+description: 大規模タスクを Plan→Implement→Review サイクルで自律完遂する階層型エージェントパッケージ。Orchestrator が Manager を並列ディスパッチし Generator-Verifier パターンで品質ゲートを通過する
+author: tamara1031
+dependencies:
+  apm:
+    - git: https://github.com/easy-agents/advisor
+      ref: 0fdcccc46c5687d739f9a4c090d9bd0f316a63ad
+  mcp: []
+scripts: {}
