@@ -10,5 +10,5 @@ dependencies:
       ref: main
   mcp: []
 scripts:
-  install: apm install --no-policy --target copilot,claude
-  compile: apm compile --target copilot,claude
+  install: apm install --no-policy
+  compile: apm compile
