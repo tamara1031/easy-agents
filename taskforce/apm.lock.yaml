@@ -1,5 +1,5 @@
 lockfile_version: '1'
-generated_at: '2026-04-25T15:59:42.681436+00:00'
+generated_at: '2026-04-25T15:59:50.374533+00:00'
 apm_version: 0.9.2
 dependencies:
 - repo_url: tamara1031/easy-agents
@@ -17,4 +17,4 @@ dependencies:
   deployed_file_hashes:
     .claude/agents/advisor.md: sha256:974abe1e066d266a3dd7ad438324d0a4a555894d970f38398c323eb3a556e7f4
     .github/agents/advisor.agent.md: sha256:974abe1e066d266a3dd7ad438324d0a4a555894d970f38398c323eb3a556e7f4
-  content_hash: sha256:aefa3437271b6c0603ba14385fbccd2fe5e2408da12ebbe4469b6e1c523b0df0
+  content_hash: sha256:796b490c97e6ccf1f48977915c1f122356c0654af52b8d9b3d061196da6661e7
