@@ -1,5 +1,9 @@
 {
-    "name": "Easy Agent",
+    "name": "parliament",
     "version": "0.1.0",
-    "description": "Easy Agent"
+    "description": "複数の専門家エージェントによる多視点議論で設計・方針判断を合意形成する議会モデルパッケージ。Advocate・Reviewer・Compliance・Pragmatist の4役割で構造化議論を行う",
+    "author": {
+        "name": "tamara1031"
+    },
+    "license": "MIT"
 }
