@@ -7,7 +7,8 @@ dependencies:
     - git: https://github.com/mizchi/skills.git
       path: empirical-prompt-tuning
       ref: main
-    - git: https://github.com/easy-agents/easy-agent.git
+    - git: https://github.com/tamara1031/easy-agents
+      path: easy-agent
       ref: main
   mcp: []
 scripts:

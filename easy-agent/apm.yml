@@ -4,13 +4,17 @@ description: ユニバーサルエントリーポイント。タスクを3軸（
 author: tamara1031
 dependencies:
   apm:
-    - git: https://github.com/easy-agents/advisor
-      ref: 0fdcccc46c5687d739f9a4c090d9bd0f316a63ad
-    - git: https://github.com/easy-agents/parliament
-      ref: 9e77f576975a1587a4dd0c45c8207cdc51a7a362
-    - git: https://github.com/easy-agents/taskforce
-      ref: ba84a407791e46fb818cb8b520f61361b82a3832
-    - git: https://github.com/easy-agents/memoir
-      ref: ec31c315bd25c101dd3d1d93e4b2312adba4884f
+    - git: https://github.com/tamara1031/easy-agents
+      path: advisor
+      ref: main
+    - git: https://github.com/tamara1031/easy-agents
+      path: parliament
+      ref: main
+    - git: https://github.com/tamara1031/easy-agents
+      path: taskforce
+      ref: main
+    - git: https://github.com/tamara1031/easy-agents
+      path: memoir
+      ref: main
   mcp: []
 scripts: {}
