@@ -1,3 +1,5 @@
+.claude/
+.github/
 
 # APM dependencies
 apm_modules/
