@@ -5,9 +5,7 @@ author: tamara1031
 target: [claude, copilot]
 dependencies:
   apm:
-    - git: https://github.com/tamara1031/easy-agents
-      path: easy-agent
-      ref: main
+    - tamara1031/easy-agents/easy-agent
   mcp: []
 scripts:
   install: apm install --no-policy

@@ -5,17 +5,9 @@ author: tamara1031
 target: [claude, copilot]
 dependencies:
   apm:
-    - git: https://github.com/tamara1031/easy-agents
-      path: advisor
-      ref: main
-    - git: https://github.com/tamara1031/easy-agents
-      path: parliament
-      ref: main
-    - git: https://github.com/tamara1031/easy-agents
-      path: taskforce
-      ref: main
-    - git: https://github.com/tamara1031/easy-agents
-      path: memoir
-      ref: main
+    - tamara1031/easy-agents/advisor
+    - tamara1031/easy-agents/parliament
+    - tamara1031/easy-agents/taskforce
+    - tamara1031/easy-agents/memoir
   mcp: []
 scripts: {}
