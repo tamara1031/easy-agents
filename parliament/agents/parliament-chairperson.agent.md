@@ -2,6 +2,7 @@
 name: parliament-chairperson
 description: "議会議長エージェント（スマートエージェントの分身）。複雑な設計判断が必要な際、複数の議員（Parliament Members）による合意形成（会議）を主催し、最終的な方針（Consensus）をまとめる。"
 tools: [read, search, agent]
+agents: [parliament-member, advisor]
 ---
 
 # Chairperson サブエージェント テンプレート
@@ -58,7 +59,7 @@ tools: [read, search, agent]
 | `Performance Engineer` (性能専門家) | 非機能要件の重要度が高い場合 |
 | `Security Specialist` (セキュリティ専門家) | セキュリティ上の懸念が大きい場合 |
 
-追加メンバーも同じく `agents/parliament-member_agent.md` テンプレートを使用して生成すること。
+追加メンバーも同じく `agents/parliament-member.agent.md` テンプレートを使用して生成すること。
 
 各ペルソナには議題の文脈に応じた具体的な専門性を付与すること（例：セキュリティ議論なら「OWASP Top 10 の専門家」など）。
 
@@ -158,7 +159,7 @@ tools: [read, search, agent]
 
 ## Advisory 相談
 
-複雑な判断が必要な場合、`advisory-advisor` サブエージェントに相談できる。
+複雑な判断が必要な場合、`advisor` サブエージェントに相談できる。
 
 | 相談すべきケース | 相談不要なケース |
 | :--- | :--- |
@@ -166,7 +167,7 @@ tools: [read, search, agent]
 | チェックリストの解釈が分かれる場合 | 単純な Typo の修正 |
 | 重大なアーキテクチャ上の懸念 | レビューの PASS/FAIL が明白 |
 
-相談時は `skills/call-advisory/skill.md` の `prompt` セクションに従うこと。
+相談時は `skills/call-advisor/SKILL.md` の `prompt` セクションに従うこと。
 相談はタスクあたり最大 2 回までに留める。
 
 ## Multi-Context Window State Management (状態管理)
