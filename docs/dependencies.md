@@ -2,6 +2,8 @@
 
 ## 依存グラフ
 
+[TODO]:FIX 
+
 ```
                      ユーザー
                         ↓
@@ -9,29 +11,20 @@
               │   easy-agent    │  (統合オーケストレーター)
               │  user-invocable │
               └────────┬────────┘
-          ┌────────────┼───────────┐
-          ↓            ↓           ↓
-   ┌──────────┐  ┌──────────┐  ┌──────────┐
-   │  advisor │  │parliament│  │ taskforce│
-   │  (Opus)  │  │          │  │          │
-   └────┬─────┘  └──────────┘  └──────────┘
-        │
-        └──→ ESCALATE → parliament / taskforce
+─────────┼───────────┐
+         ↓           ↓
+  ┌──────────┐  ┌──────────┐
+  │parliament│  │ taskforce│
+  │          │  │          │
+  └──────────┘  └──────────┘
 
-memoir は独立モジュール (advisor経由で参照のみ)
+
+memoir, advisor は独立モジュール
 ```
 
 ## APM 宣言依存関係
 
-| モジュール | apm.yml 依存宣言 |
-|---|---|
-| easy-agent | empirical-prompt-tuning (mizchi/skills) |
-| advisor | easy-agent, memoir, parliament, taskforce |
-| parliament | empirical-prompt-tuning (mizchi/skills) |
-| taskforce | empirical-prompt-tuning (mizchi/skills) |
-| memoir | empirical-prompt-tuning (mizchi/skills) |
-
-> **注意**: advisor の apm.yml は easy-agent/memoir/parliament/taskforce に固定コミットハッシュで依存を宣言している。他モジュールは互いに宣言依存を持たない。
+[TODO]
 
 ## エージェント間の呼び出し関係
 
