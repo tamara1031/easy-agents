@@ -1,5 +1,5 @@
 lockfile_version: '1'
-generated_at: '2026-04-26T04:07:03.082505+00:00'
+generated_at: '2026-04-26T04:42:28.224466+00:00'
 apm_version: 0.9.2
 dependencies:
 - repo_url: mizchi/skills
@@ -15,14 +15,14 @@ dependencies:
   is_dev: true
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 3416a0b4725e0fecdbf92509f08261c5955c3e02
+  resolved_commit: 5b4f9dd1d9b555a2b841128cb4cd6ec200f993f1
   virtual_path: easy-agent
   is_virtual: true
   package_type: apm_package
-  content_hash: sha256:69808a97192460795d5ff4371038c9a63e57187c5f5a135e8b7aab3217f73898
+  content_hash: sha256:9a95a0409260932984a379301bfbf51cfcd9c8c32812587f5044fb2c08f9b606
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 3416a0b4725e0fecdbf92509f08261c5955c3e02
+  resolved_commit: 5b4f9dd1d9b555a2b841128cb4cd6ec200f993f1
   virtual_path: advisor
   is_virtual: true
   depth: 2
@@ -31,10 +31,10 @@ dependencies:
   deployed_files:
   - .claude/skills/call-advisor
   - .github/skills/call-advisor
-  content_hash: sha256:7a8da0947cd71832d3a1cb8595b0501470f6ddfe7a040b8e79ca628e1b295825
+  content_hash: sha256:89a5ac8fc92b6164eda5e65e9f58ce22d2ed628f5e68eaff38100a4797bc1202
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 3416a0b4725e0fecdbf92509f08261c5955c3e02
+  resolved_commit: 5b4f9dd1d9b555a2b841128cb4cd6ec200f993f1
   virtual_path: memoir
   is_virtual: true
   depth: 2
@@ -43,10 +43,10 @@ dependencies:
   deployed_files:
   - .claude/skills/long-term-memory
   - .github/skills/long-term-memory
-  content_hash: sha256:73fd88e554f5621ce526286f3b71503b0d922e0078cd97f757e185c3c95fe50b
+  content_hash: sha256:82344f0fdc5389e6f8819529c7620cc0ccabce2026343007290fe9f7d5384374
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 3416a0b4725e0fecdbf92509f08261c5955c3e02
+  resolved_commit: 5b4f9dd1d9b555a2b841128cb4cd6ec200f993f1
   virtual_path: parliament
   is_virtual: true
   depth: 2
@@ -55,15 +55,16 @@ dependencies:
   deployed_files:
   - .claude/skills/call-parliament
   - .github/skills/call-parliament
-  content_hash: sha256:82f074c3d61a66e2be09a169d9dff2c3cd394ed5cfb1137d19cb3a75b6ff1e9a
+  content_hash: sha256:3ed8459179a90b3884e018735cf7c0998a97f62a6f7ba33a67294c4b33e5b8b9
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 3416a0b4725e0fecdbf92509f08261c5955c3e02
+  resolved_commit: 5b4f9dd1d9b555a2b841128cb4cd6ec200f993f1
   virtual_path: taskforce
   is_virtual: true
   depth: 2
   resolved_by: tamara1031/easy-agents
   package_type: apm_package
   deployed_files:
+  - .claude/skills/call-hierarchy
   - .github/skills/call-hierarchy
-  content_hash: sha256:1ad50daaab13426a096b490d4c8575624515de681d62efc257794a8c700803b0
+  content_hash: sha256:f84265486597cf8ea5838d4e57ef8136cfe5249d2d0a611d0e27d6b937856d3f
