@@ -4,6 +4,19 @@
 
 このリポジトリは Claude Code 向けのマルチエージェントフレームワーク群を APM パッケージとして管理する。パッケージは `easy-agent`, `advisor`, `parliament`, `taskforce`, `memoir` の5つ。
 
+## APM パッケージの仕組み
+
+APM (Agent Package Manager) における役割:
+
+| ディレクトリ | 役割 | git 追跡 |
+|---|---|---|
+| `.apm/` | **ソース** — エージェント・スキルをここに書く | 追跡する |
+| `.github/` | ビルド成果物 — `apm install` が生成 | 無視する |
+| `.claude/` | ビルド成果物 — `apm install` が生成 | 無視する |
+| `apm_modules/` | インストール済み依存パッケージ | 無視する |
+
+`.apm/` は npm の `src/`、`.github/` と `.claude/` は `dist/` に相当する。
+
 ## パッケージ構成
 
 各サブパッケージは以下の構造を持つ:
@@ -11,47 +24,40 @@
 ```
 <package>/
 ├── plugin.json            # Claude プラグインメタデータ
-├── apm.yml                # APM パッケージ設定 (type: hybrid, scripts.sync 必須)
+├── apm.yml                # APM パッケージ設定
 ├── README.md
-├── .gitignore
-├── .apm/                  # デプロイ用コンパイル成果物 (git 追跡対象)
-│   ├── .gitkeep
-│   ├── agents/            # apm run sync で agents/ から同期
-│   └── skills/            # apm run sync で skills/ から同期
-├── agents/                # エージェント定義ソース (*.agent.md)
-└── skills/                # スキル定義ソース
+├── .gitignore             # .claude/ .github/ apm_modules/ を除外
+└── .apm/                  # ソースディレクトリ (git 追跡対象)
+    ├── agents/            # エージェント定義 (*.agent.md)
+    └── skills/            # スキル定義 (SKILL.md + 付属ファイル)
 ```
 
-## 重要: .apm/ ディレクトリの管理
+`agents/`・`skills/` のルートレベルディレクトリは存在しない。`.apm/` が唯一のソース。
 
-`.apm/` は `apm install` が依存パッケージのリソースをデプロイする際に参照するディレクトリ。`.apm/` にファイルがないと、パッケージはインストール済みとして認識されるが何もデプロイされない。
-
-**`.apm/` は `apm install` では自動生成されない。`apm run sync` で手動同期してからコミットする。**
-
-### エージェント・スキルを変更した場合
+## エージェント・スキルを変更した場合
 
 ```bash
-# 1. ソースファイルを編集
-vi <package>/agents/*.agent.md  # または skills/**/SKILL.md
+# 1. .apm/ 配下のファイルを直接編集
+vi <package>/.apm/agents/*.agent.md
+vi <package>/.apm/skills/<skill-name>/SKILL.md
 
-# 2. .apm/ に同期 (packages/ ディレクトリ内で実行)
-cd <package>/
-apm run sync
-# → .apm/agents/ と .apm/skills/ が agents/ と skills/ から上書き同期される
-
-# 3. 変更ファイルをすべてコミット (ソース + .apm/ の両方)
-git add agents/ skills/ .apm/
+# 2. 変更をコミット
+git add <package>/.apm/
 git commit -m "feat(<package>): ..."
+
+# 3. ルートプロジェクトで apm install を実行してデプロイ
+apm install --no-policy --update
 ```
 
-### 新しいパッケージを追加する場合
+`apm install` が `.apm/` を読み取り `.github/` と `.claude/` を生成する。sync スクリプトは不要。
+
+## 新しいパッケージを追加する場合
 
 ```bash
 # 1. ディレクトリ骨格を作成
-mkdir -p <package>/{agents,skills/<skill-name>,.apm}
-touch <package>/.apm/.gitkeep
+mkdir -p <package>/.apm/{agents,skills/<skill-name>}
 
-# 2. apm.yml を作成 (type: hybrid と scripts.sync は必須)
+# 2. apm.yml を作成
 cat > <package>/apm.yml << 'EOF'
 name: <package>
 version: 0.1.0
@@ -63,37 +69,29 @@ type: hybrid
 dependencies:
   apm: []
   mcp: []
-scripts:
-  sync: "rm -rf .apm/agents .apm/skills && cp -r agents .apm/ && cp -r skills .apm/"
+scripts: {}
 EOF
-# ※ agents/ のみのパッケージは skills を除く、skills/ のみは agents を除く
 
-# 3. plugin.json を作成 (advisor パターンを参考に)
-
-# 4. agents/*.agent.md と skills/**/SKILL.md を作成
-
-# 5. .apm/ に同期してコミット
-apm run sync
-git add .
-git commit -m "feat: add <package> package"
-```
-
-### .gitignore テンプレート
-
-新規パッケージには以下の `.gitignore` を作成する:
-
-```
+# 3. .gitignore を作成
+cat > <package>/.gitignore << 'EOF'
 .claude/
-.github/skills/
+.github/
 
 # APM dependencies
 apm_modules/
+EOF
+
+# 4. .apm/agents/*.agent.md と .apm/skills/**/SKILL.md を作成
+
+# 5. コミット
+git add <package>/
+git commit -m "feat: add <package> package"
 ```
 
 ## root プロジェクトでの apm install
 
 ```bash
-# ローカルキャッシュから (各パッケージの .apm/ を commit/push 済みの場合)
+# ローカルキャッシュから (.apm/ が commit 済みの場合)
 apm install --no-policy
 
 # GitHub から最新を再取得してインストール

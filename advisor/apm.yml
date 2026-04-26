@@ -8,5 +8,4 @@ type: hybrid
 dependencies:
   apm: []
   mcp: []
-scripts:
-  sync: "rm -rf .apm/agents .apm/skills && cp -r agents .apm/ && cp -r skills .apm/"
+scripts: {}

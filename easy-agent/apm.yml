@@ -12,5 +12,4 @@ dependencies:
     - tamara1031/easy-agents/taskforce
     - tamara1031/easy-agents/memoir
   mcp: []
-scripts:
-  sync: "rm -rf .apm/agents && cp -r agents .apm/"
+scripts: {}
