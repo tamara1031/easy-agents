@@ -20,7 +20,8 @@ jobs:
         run: |
           curl -fsSL "https://github.com/microsoft/apm/releases/download/v${APM_VERSION}/apm-linux-x86_64.tar.gz" \
             | tar xz -C /tmp
-          sudo mv /tmp/apm-linux-x86_64/apm /usr/local/bin/apm
+          sudo mv /tmp/apm-linux-x86_64 /usr/local/lib/apm
+          sudo ln -s /usr/local/lib/apm/apm /usr/local/bin/apm
           apm --version
 
       - name: Install dependencies
