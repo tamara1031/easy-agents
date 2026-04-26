@@ -3,7 +3,7 @@
 ## リポジトリルート
 
 ```
-easy-agents-hub/
+easy-agents/
 ├── apm.yml                             # ワークスペース APM 設定
 ├── apm.lock.yaml                       # 依存ロックファイル
 ├── .gitignore                          # Git 管理除外設定
@@ -40,7 +40,6 @@ easy-agents-hub/
 
 ```
 <package>/
-├── plugin.json            # Claude プラグインメタデータ (name/version/description/author/license)
 ├── apm.yml                # APM パッケージ設定・依存関係
 ├── README.md              # パッケージ概要・利用方法
 ├── .gitignore             # .claude/ .github/ apm_modules/ を除外
@@ -65,7 +64,6 @@ easy-agent/
 │   └── agents/
 │       └── easy-agent.agent.md         # 統合オーケストレーター定義
 ├── apm.yml                             # 依存: advisor, parliament, taskforce, memoir
-├── plugin.json
 ├── README.md
 └── .gitignore
 ```
@@ -82,7 +80,6 @@ advisor/
 │           └── references/
 │               └── prompt-template.md  # 相談プロンプト例集
 ├── apm.yml                             # 宣言依存なし
-├── plugin.json
 ├── README.md
 └── .gitignore
 ```
@@ -104,7 +101,6 @@ parliament/
 │           └── templates/
 │               └── stance_definitions.md    # スタンス定義
 ├── apm.yml                                  # 宣言依存なし
-├── plugin.json
 ├── README.md
 └── .gitignore
 ```
@@ -127,7 +123,6 @@ taskforce/
 │               ├── checklist.md
 │               └── status_definitions.md
 ├── apm.yml                              # 宣言依存なし
-├── plugin.json
 ├── README.md
 └── .gitignore
 ```
@@ -148,7 +143,6 @@ memoir/
 │               ├── memory_update.py        # 更新
 │               └── memory_delete.py        # 削除
 ├── apm.yml                                 # 宣言依存なし
-├── plugin.json
 ├── README.md
 └── .gitignore
 ```
