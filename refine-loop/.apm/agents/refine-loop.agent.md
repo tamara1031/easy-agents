@@ -29,10 +29,13 @@ max_iterations: 3
 
 ## 実行手順
 
-### Step 0: 入力パース
+### Step 0: 入力パース・環境チェック
 - `subject` / `requirements_checklist` / `task_context` / `max_iterations` を読み取る
 - `max_iterations` が未指定の場合はデフォルト 3 を使用
 - `[critical]` タグが1つもない場合は ABORT して報告する
+- **`agent` ツール可用性チェック**: このエージェントは毎イテレーションで新規サブエージェントを dispatch することが必須。`agent` ツールが実行環境で利用不可能な場合（サブエージェントとして召喚され dispatch 権限がない場合を含む）は、ループを開始せず即座に ABORT を返す。自己評価（自分がレビュアーを兼任すること）は**絶対に禁止**。ABORT レポートに「dispatch 不可」と理由を明記する。
+
+> **dispatch 不可の判定**: `agent` ツールを使って dispatch を試み、エラーになった場合に ABORT する（事前に可用性を問い合わせるツールがない環境でも対応できる）。
 
 ### Step 1-N: 反復ループ
 
