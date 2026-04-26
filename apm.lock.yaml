@@ -1,10 +1,10 @@
 lockfile_version: '1'
-generated_at: '2026-04-26T12:14:00.333481+00:00'
+generated_at: '2026-04-26T15:37:16.068727+00:00'
 apm_version: 0.9.2
 dependencies:
 - repo_url: mizchi/skills
   host: github.com
-  resolved_commit: 8ad7efe3b85a6ec323f33feba1049f791680bcf2
+  resolved_commit: a0ebf680f62836f64d7e9b741ee212f55b108f88
   virtual_path: empirical-prompt-tuning
   is_virtual: true
   package_type: claude_skill
@@ -15,7 +15,7 @@ dependencies:
   is_dev: true
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 231e860fcb91857773310a8b4b1e6f5e358bc366
+  resolved_commit: 1fb1aa5c0ddedb7634a9b50cc274c9ea8f870a85
   virtual_path: easy-agent
   is_virtual: true
   package_type: apm_package
@@ -23,12 +23,12 @@ dependencies:
   - .claude/agents/easy-agent.md
   - .github/agents/easy-agent.agent.md
   deployed_file_hashes:
-    .claude/agents/easy-agent.md: sha256:f202d98469626ac531cf1117b6407559b93e99be52097830cb7116c4059b67ce
-    .github/agents/easy-agent.agent.md: sha256:f202d98469626ac531cf1117b6407559b93e99be52097830cb7116c4059b67ce
-  content_hash: sha256:bb4abc8b32836bc91c92199322ad08843311fd352a1e578f001b9477661ac22a
+    .claude/agents/easy-agent.md: sha256:67d09c049e02693980bf432905262302b645df2b389e6a84d77d6b24c956aad4
+    .github/agents/easy-agent.agent.md: sha256:67d09c049e02693980bf432905262302b645df2b389e6a84d77d6b24c956aad4
+  content_hash: sha256:bf4a818f61913222fed09ca8d2c90eb4cb5ea6fee6d97721e0aff6b81f19737d
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 231e860fcb91857773310a8b4b1e6f5e358bc366
+  resolved_commit: 1fb1aa5c0ddedb7634a9b50cc274c9ea8f870a85
   virtual_path: advisor
   is_virtual: true
   depth: 2
@@ -42,10 +42,10 @@ dependencies:
   deployed_file_hashes:
     .claude/agents/advisor.md: sha256:c2cd581ae46bc8d3a4e4f8539f81d24c0d28598d2c59bfd0452f2d4b8c636c3c
     .github/agents/advisor.agent.md: sha256:c2cd581ae46bc8d3a4e4f8539f81d24c0d28598d2c59bfd0452f2d4b8c636c3c
-  content_hash: sha256:f7fb02d187a3fc862d44dda38b3a61c72f60052b2ac80b80754e23ad391fdca8
+  content_hash: sha256:e94d02e71dd8f06e0ee6ca5627784edffb45ce14fd06755a3b08a8c1bddac4ae
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 231e860fcb91857773310a8b4b1e6f5e358bc366
+  resolved_commit: 1fb1aa5c0ddedb7634a9b50cc274c9ea8f870a85
   virtual_path: memoir
   is_virtual: true
   depth: 2
@@ -54,10 +54,10 @@ dependencies:
   deployed_files:
   - .claude/skills/long-term-memory
   - .github/skills/long-term-memory
-  content_hash: sha256:82344f0fdc5389e6f8819529c7620cc0ccabce2026343007290fe9f7d5384374
+  content_hash: sha256:7d5cf5b0c9b6b620cfcda1464378df522947f4b792eab0e49bae3a9309e88d25
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 231e860fcb91857773310a8b4b1e6f5e358bc366
+  resolved_commit: 1fb1aa5c0ddedb7634a9b50cc274c9ea8f870a85
   virtual_path: parliament
   is_virtual: true
   depth: 2
@@ -71,14 +71,14 @@ dependencies:
   - .github/agents/parliament-member.agent.md
   - .github/skills/call-parliament
   deployed_file_hashes:
-    .claude/agents/parliament-chairperson.md: sha256:3fd3426aab2d0bd2c1a4c25d28df2bfdcbfe246146054e81b38f351474cb93a7
+    .claude/agents/parliament-chairperson.md: sha256:0b3bccc2cad46f5f8ea0fc7114ff0e50ad0b648682d5eb40a0bde5f449aae61e
     .claude/agents/parliament-member.md: sha256:54a66f4ce399ad4e07020dbf6007aabe847c717853ed0005ce46dc1740ed3edd
-    .github/agents/parliament-chairperson.agent.md: sha256:3fd3426aab2d0bd2c1a4c25d28df2bfdcbfe246146054e81b38f351474cb93a7
+    .github/agents/parliament-chairperson.agent.md: sha256:0b3bccc2cad46f5f8ea0fc7114ff0e50ad0b648682d5eb40a0bde5f449aae61e
     .github/agents/parliament-member.agent.md: sha256:54a66f4ce399ad4e07020dbf6007aabe847c717853ed0005ce46dc1740ed3edd
-  content_hash: sha256:29836aff7133e40aad693f4f77555d49225178f1a654ab03e443952b7f53601c
+  content_hash: sha256:e8204cde08d6b3714044ce8b45e5810479d99e0943afa6b25d7d758cf5b9d394
 - repo_url: tamara1031/easy-agents
   host: github.com
-  resolved_commit: 231e860fcb91857773310a8b4b1e6f5e358bc366
+  resolved_commit: 1fb1aa5c0ddedb7634a9b50cc274c9ea8f870a85
   virtual_path: taskforce
   is_virtual: true
   depth: 2
@@ -96,4 +96,4 @@ dependencies:
     .claude/agents/hierarchy-member.md: sha256:64d9cea26f6dfd12dc1cff52642feb0eeb4b1284e9d296e1be425b6fdc179bbf
     .github/agents/hierarchy-manager.agent.md: sha256:3e02da213f7af7c36ac0cc8487e869cf3b6a853c254b1d43b08ca6dc8e1b61b5
     .github/agents/hierarchy-member.agent.md: sha256:64d9cea26f6dfd12dc1cff52642feb0eeb4b1284e9d296e1be425b6fdc179bbf
-  content_hash: sha256:96f54b81adeb2b0c795372b1530ffcc2df8b5092fc2cc3ab0b426435c539202f
+  content_hash: sha256:fdd1cc2d5b673434b9ae61909ff30899a6f930999738cc91b15e8e06a2a34292
