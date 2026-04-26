@@ -11,6 +11,3 @@ dependencies:
   apm: []
   mcp: []
 scripts: {}
-devDependencies:
-  apm:
-  - mizchi/skills/empirical-prompt-tuning

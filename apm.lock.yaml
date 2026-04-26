@@ -2,6 +2,17 @@ lockfile_version: '1'
 generated_at: '2026-04-26T04:07:03.082505+00:00'
 apm_version: 0.9.2
 dependencies:
+- repo_url: mizchi/skills
+  host: github.com
+  resolved_commit: 8ad7efe3b85a6ec323f33feba1049f791680bcf2
+  virtual_path: empirical-prompt-tuning
+  is_virtual: true
+  package_type: claude_skill
+  deployed_files:
+  - .claude/skills/empirical-prompt-tuning
+  - .github/skills/empirical-prompt-tuning
+  content_hash: sha256:9c64f10bca463d3ea059d1659d4dd9fddfd90239825c44f1be20c18a2e15b69a
+  is_dev: true
 - repo_url: tamara1031/easy-agents
   host: github.com
   resolved_commit: 3416a0b4725e0fecdbf92509f08261c5955c3e02
