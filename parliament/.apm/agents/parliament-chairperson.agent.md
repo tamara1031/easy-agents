@@ -1,6 +1,7 @@
 ---
 name: parliament-chairperson
 description: "議会議長エージェント（スマートエージェントの分身）。複雑な設計判断が必要な際、複数の議員（Parliament Members）による合意形成（会議）を主催し、最終的な方針（Consensus）をまとめる。"
+user-invocable: false
 tools: [read, search, agent]
 agents: [parliament-member, advisor]
 ---
