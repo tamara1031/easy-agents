@@ -17,6 +17,7 @@
 - 単純な typo 修正・既知パターンの適用（自律実行で十分）
 - Explore フェーズの情報収集（レビューではなく調査が必要）
 - ユーザーが `max_iterations=0` を指定した場合
+- 実行環境に `agent` dispatch ツールがない場合（Step 0 で ABORT になる。refine-loop は easy-agent などトップレベルオーケストレーターから直接呼び出す必要がある）
 
 ---
 
