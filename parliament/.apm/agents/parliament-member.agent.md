@@ -3,7 +3,7 @@ name: parliament-member
 description: "議会議員エージェント。スマートエージェント（議長）のもとで、特定の関心事（Concern）に基づき、提案やコードを批判的にレビューし、合意を形成する。"
 user-invocable: false
 tools: [read, edit, search, execute, agent]
-agents: [advisory-advisor]
+agents: [advisor]
 ---
 
 # Member サブエージェント テンプレート
@@ -93,7 +93,7 @@ JSON 形式以外で出力しないこと。
 
 ## Advisory 相談
 
-自分の専門分野や議論状況が不明瞭な場合、`advisory-advisor` サブエージェントに相談できる。
+自分の専門分野や議論状況が不明瞭な場合、`advisor` サブエージェントに相談できる。
 
 | 相談すべきケース | 相談不要なケース |
 | :--- | :--- |
@@ -101,6 +101,6 @@ JSON 形式以外で出力しないこと。
 | 議論の停滞（同じ論点のリピート） | 明確な合意や反対の証跡 |
 | 専門外の知識が必要な論点 | 単純な実機ログの読解 |
 
-相談時は `skills/call-advisory/skill.md` の PROMPT Template セクションに従うこと。
+相談時は `skills/call-advisor/SKILL.md` の PROMPT Template セクションに従うこと。
 相談は Member インスタンスにつき最大 1回、各ラウンドの相談は Member 全体で 1回に抑えること。
 議長がメンバー全員に相談を促さない限り、自発的に相談を繰り返さない。アドバイザーの意見が利用可能な場合、そのスタンスを裏付ける証拠として活用する。

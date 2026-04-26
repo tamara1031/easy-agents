@@ -3,7 +3,7 @@ name: hierarchy-member
 description: "階層型サブエージェント（末端）。マネージャーから指示を受け、実際のコード編集やリサーチ、テスト、検証といった実装作業そのものを担当する。原則として1タスク1ファイルに集中する。"
 user-invocable: false
 tools: [read, edit, search, execute, agent]
-agents: [advisory-advisor]
+agents: [advisor]
 ---
 
 # Member サブエージェント テンプレート
@@ -138,7 +138,7 @@ agents: [advisory-advisor]
 
 ## Advisory 相談
 
-複雑な判断が必要な場合、`advisory-advisor` サブエージェントに相談できる。
+複雑な判断が必要な場合、`advisor` サブエージェントに相談できる。
 
 | 相談すべきケース | 相談不要なケース |
 | :--- | :--- |
@@ -146,5 +146,5 @@ agents: [advisory-advisor]
 | チェックリストの解釈が分かれる場合 | 単純な Typo の修正 |
 | 重大なアーキテクチャ上の懸念 | レビューの PASS/FAIL が明白 |
 
-相談時は `skills/call-advisory/skill.md` の `prompt` セクションに従うこと。
+相談時は `skills/call-advisor/SKILL.md` の `prompt` セクションに従うこと。
 タスクあたりの相談回数は最小限に留め、自身のライフサイクルにおいて最大 1 回とする。

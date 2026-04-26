@@ -3,7 +3,7 @@ name: hierarchy-manager
 description: "階層型マネージャーエージェント。スマートエージェントから大規模タスク（TaskScale=Mid/Large）を委譲され、計画立案（Planner）、実装（Implementer）、検証（Reviewer）の実務フローを管理し、末端サブエージェントへ具体的指示を下す。"
 user-invocable: false
 tools: [read, search, agent, todo]
-agents: [hierarchy-member, advisory-advisor]
+agents: [hierarchy-member, advisor]
 ---
 
 # Manager サブエージェント テンプレート
@@ -41,7 +41,7 @@ agents: [hierarchy-member, advisory-advisor]
 ### 1. ペルソナ動的生成 (INSTANTIATE_MEMBERS)
 
 タスクを分析し、以下の **必須ロール** に最適な専門家ペルソナを生成する。
-`agents/hierarchy-member_agent.md` テンプレートを読み込み、プレースホルダーを置換して `task` ツール (mode: `background`) でメンバーを生成すること。
+`agents/hierarchy-member.agent.md` テンプレートを読み込み、プレースホルダーを置換して `task` ツール (mode: `background`) でメンバーを生成すること。
 > **メンバーのコンテキスト**: サブエージェント (mode: `background`) で起動され、別コンテキストウィンドウで実行される。メンバーの全作業 (ファイル読み込み・コード生成・レビュー) はマネージャーのコンテキストを消費しない。完了通知を受け取る `read_agent` で結果のみ取得する。
 
 > **フォールバック**: `task` ツールが利用できない環境では `runSubagent` を使用する。
@@ -68,7 +68,7 @@ runSubagent(
 )
 ```
 
-> テンプレート (`agents/hierarchy-member_agent.md`) を読み込み、プレースホルダー (`agent_role`, `task_description`, `checklist`, `previous_output`, `rejection_reason`, `context`) を各役割の欄に置換した結果を `prompt` パラメータに渡す。
+> テンプレート (`agents/hierarchy-member.agent.md`) を読み込み、プレースホルダー (`agent_role`, `task_description`, `checklist`, `previous_output`, `rejection_reason`, `context`) を各役割の欄に置換した結果を `prompt` パラメータに渡す。
 
 #### 必須ロール (3名)
 
@@ -106,7 +106,7 @@ runSubagent(
 
 ### 2. Plan フェーズ (Planner 実行)
 
-`agents/hierarchy-member_agent.md` テンプレートを読み込み、Planner ペルソナで `task(agent_type: "my-copilot:hierarchy-member", mode: "background")` を起動する。
+`agents/hierarchy-member.agent.md` テンプレートを読み込み、Planner ペルソナで `task(agent_type: "my-copilot:hierarchy-member", mode: "background")` を起動する。
 
 Planner に渡す情報:
 - タスクの説明とコンテキスト
@@ -202,7 +202,7 @@ Reviewer が `APPROVE` を返したら、以下の情報を JSON 出力 (`skills
 ## Constraints
 
 1. マネージャー自身は直接作業を行わない。ファシリテーションと要約に徹する。
-2. メンバーの生成には `agents/hierarchy-member_agent.md` テンプレートを使用する。
+2. メンバーの生成には `agents/hierarchy-member.agent.md` テンプレートを使用する。
 3. ステータスを `APPROVED` / `REJECTED` / `ERROR` に更新しない。これらはオーケストレーターの専権。
 4. `IN_REVIEW` への更新と補足欄への記録はマネージャーが行う。
 5. 内部ループ (Implementer & Reviewer) の最大回数は 5 回。
@@ -235,7 +235,7 @@ Reviewer が `APPROVE` を返したら、以下の情報を JSON 出力 (`skills
 
 ## Advisory 相談
 
-判断に迷う場合や複雑な場合、`advisory-advisor` サブエージェントに相談できる。
+判断に迷う場合や複雑な場合、`advisor` サブエージェントに相談できる。
 
 | 相談すべきケース | 相談不要なケース |
 | :--- | :--- |
@@ -244,7 +244,7 @@ Reviewer が `APPROVE` を返したら、以下の情報を JSON 出力 (`skills
 | アーキテクチャの根本的な変更が必要 | メンバーの単発の実行エラー |
 | ブロッカーを根本的に変える必要 | 構文エラーや Typo の修正 |
 
-相談時は `sk_consult_advisor` ツールを使用し、Prompt Template セクションに従うこと。
+相談時は `skills/call-advisor/SKILL.md` の `prompt` セクションに従うこと。
 相談はタスクあたり最大2回までに留める。
 
 ## Long-Horizon State Management (マルチステップ状態管理)
