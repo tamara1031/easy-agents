@@ -11,5 +11,6 @@ dependencies:
     - tamara1031/easy-agents/parliament
     - tamara1031/easy-agents/taskforce
     - tamara1031/easy-agents/memoir
+    - tamara1031/easy-agents/refine-loop
   mcp: []
 scripts: {}
