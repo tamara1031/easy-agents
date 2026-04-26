@@ -1,6 +1,3 @@
-動画「IMG_5744.mov」のターミナル画面に表示されている `manager_output.json` の内容を一言一句たがわず書き起こしました。
-
-```json
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "ManagerOutput",
@@ -15,13 +12,16 @@
     "properties": {
         "task_id": {
             "type": "string",
-            "pattern": "^T[0-9]{3}$"
+            "pattern": "^T[0-9]{3}$",
+            "description": "対象タスクID (例: T001)"
         },
         "status": {
             "type": "string",
             "enum": [
-                "IN_REVIEW"
-            ]
+                "IN_REVIEW",
+                "ERROR"
+            ],
+            "description": "IN_REVIEW: 成果物をオーケストレーターへ提出。ERROR: 内部ループ上限超過など、マネージャーが自力で回復不能な失敗が発生した場合。"
         },
         "phase": {
             "type": "string",
@@ -112,6 +112,13 @@
                 "type": "string"
             },
             "description": "残存リスクや注意点"
+        },
+        "error_reason": {
+            "type": [
+                "string",
+                "null"
+            ],
+            "description": "status が ERROR の場合のみ。失敗の原因と経緯の要約。オーケストレーターのフォールバック判断に使用する。"
         }
     },
     "$defs": {
@@ -140,7 +147,8 @@
             ],
             "properties": {
                 "background": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "背景設定"
                 },
                 "reason": {
                     "type": "string",
@@ -150,4 +158,3 @@
         }
     }
 }
-```

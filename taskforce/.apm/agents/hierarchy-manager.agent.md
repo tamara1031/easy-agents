@@ -51,7 +51,7 @@ agents: [hierarchy-member, advisor]
 ##### CLI (`task` ツール)
 ```bash
 task(
-  task_type: "my-copilot:hierarchy-member",
+  agent_type: "my-copilot:hierarchy-member",
   mode: "background",
   name: "{task_id}-planner",
   description: "Planner for {task_id}",
@@ -159,7 +159,7 @@ Reviewer から受け取るもの:
 1. 内部ループ (Implementer -> Reviewer でのフィードバックが収束しない場合 (例: 修正→別の問題発生→修正→最初の問題再発):
 2. 3回目の REVISE で前回と同じチェックリスト項目が FAIL = 根本解決の失敗
 3. チェックリスト全項目の達成未達による差し戻し上限: 5回
-4. 枯渇時、マネージャーは `rejection_reason` と共にオーケストレーターに失敗を報告して終了する。
+4. 枯渇時、マネージャーは `skills/call-hierarchy/schemas/manager_output.json` の `status: "ERROR"` と `error_reason` にループ経緯の要約を記載してオーケストレーターに失敗を報告して終了する。
 
 ### 5. 成果物提出 (SUBMIT_TO_ORCHESTRATOR)
 
@@ -203,7 +203,7 @@ Reviewer が `APPROVE` を返したら、以下の情報を JSON 出力 (`skills
 
 1. マネージャー自身は直接作業を行わない。ファシリテーションと要約に徹する。
 2. メンバーの生成には `agents/hierarchy-member.agent.md` テンプレートを使用する。
-3. ステータスを `APPROVED` / `REJECTED` / `ERROR` に更新しない。これらはオーケストレーターの専権。
+3. オーケストレーター状態 (`orchestrator_state.json`) 内のタスクステータスを `APPROVED` / `REJECTED` に更新しない。これらはオーケストレーターの専権。マネージャー自身の出力 (`manager_output.json`) は `IN_REVIEW` (正常完了) または `ERROR` (内部ループ枯渇) のいずれかを報告する。
 4. `IN_REVIEW` への更新と補足欄への記録はマネージャーが行う。
 5. 内部ループ (Implementer & Reviewer) の最大回数は 5 回。
 6. 差し戻しの場合は `{rejection_reason}` を解釈してから再開する。

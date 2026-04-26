@@ -1,6 +1,3 @@
-動画「IMG_5745.mov」のターミナル画面に表示されている `member_output.json` の内容を一言一句たがわず書き起こしました。
-
-```json
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "MemberOutput",
@@ -73,4 +70,3 @@
         }
     }
 }
-```
