@@ -69,10 +69,10 @@ agents: [parliament-member, advisor]
 `task` ツール (mode: `background`) で呼び出し、議論を遂行する。
 メンバーに渡す情報は、議論が進むごとに `discussion_summary` として 500 トークン以内に内容をまとめ、最新の要約と直前の発言のみをメンバーのプロンプト内に `previous_statement` として渡す（コンテキスト管理）。
 
-メンバーから受け取るもの:
-- **発言内容とチェックリスト対応**: `{checklist_status}` (テキスト形式)
-- **最新の合意案への合否判定**: `{verdict}` ("APPROVE" / "REVISE")
-- **修正案の具体的提示**: (REVISE の場合のみ、`rejection_instructions`)
+メンバーから受け取るもの (`member_message.json` スキーマ準拠):
+- **スタンスと発言内容**: `{stance}` ("PROPOSE" / "CRITIQUE" / "APPROVE" / "REVISE") と `{statement}` (発言内容・チェックリスト対応を含むテキスト)
+- **発言ターゲット**: `{target_agent}` (議長宛、または他メンバー宛)
+- **承認条件 (CRITIQUE / REVISE の場合のみ)**: `{condition_for_approval}` (どうすれば承認するかの具体的条件。APPROVE 時は null)
 
 > メンバーは `member_message.json` 形式の raw JSON で返答する。スタンス定義は `stance_definitions.md` 参照。
 

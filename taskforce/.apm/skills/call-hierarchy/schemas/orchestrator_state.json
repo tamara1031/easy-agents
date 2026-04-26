@@ -95,9 +95,10 @@
                             "IN_REVIEW",
                             "APPROVED",
                             "REJECTED",
+                            "SKIPPED",
                             "ERROR"
                         ],
-                        "description": "タスクのステータス"
+                        "description": "タスクのステータス。SKIPPED: depends_on の依存タスクが APPROVED に到達したが、このタスクを実行する必要がなくなった場合 (オーケストレーターの裁量で設定)"
                     },
                     "rejection_count": {
                         "type": "integer",

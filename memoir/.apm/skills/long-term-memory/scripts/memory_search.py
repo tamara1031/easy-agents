@@ -88,4 +88,46 @@ def main() -> None:
         return
 
     # Human-readable output
-    if not results.get
+    if not results.get("ids") or not results["ids"][0]:
+        print("No results found.")
+        return
+
+    ids = results["ids"][0]
+    documents = results["documents"][0]
+    metadatas = results["metadatas"][0]
+    distances = results["distances"][0]
+
+    print(f"Results ({len(ids)} found):\n")
+    for rank, (doc_id, doc, meta, dist) in enumerate(
+        zip(ids, documents, metadatas, distances), 1
+    ):
+        score = 1.0 - dist  # cosine distance → similarity
+
+        if score >= 0.85:
+            label = "★★★ 非常に高い一致"
+        elif score >= 0.60:
+            label = "★★  関連性が高い"
+        elif score >= 0.35:
+            label = "★   部分的に関連"
+        else:
+            label = "    関連性が低い"
+
+        tags_csv = meta.get("tags", "")
+        source = meta.get("source", "")
+        created_at = meta.get("created_at", "")
+
+        print(f"[{rank}] score={score:.4f}  {label}")
+        print(f"     ID : {doc_id}")
+        if tags_csv:
+            print(f"     tags: {tags_csv}")
+        if source:
+            print(f"     src : {source}")
+        if created_at:
+            print(f"     at  : {created_at[:19]}")
+        preview = doc[:200] + "..." if len(doc) > 200 else doc
+        print(f"     {preview}")
+        print()
+
+
+if __name__ == "__main__":
+    main()
