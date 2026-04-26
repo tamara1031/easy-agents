@@ -33,7 +33,7 @@ easy-agents-hub/
 ├── apm.yml                # APM パッケージ設定・依存関係
 ├── README.md              # パッケージ概要・利用方法
 ├── .gitignore             # APM コンパイル成果物除外
-├── .apm/                  # APM コンパイル成果物 (.gitkeep のみ追跡。中身は git-ignored)
+├── .apm/                  # APM コンパイル成果物 (エージェント・スキルのデプロイ用コピー。git 追跡対象)
 ├── agents/                # エージェント定義 (*.agent.md)         ※ memoir には存在しない
 └── skills/
     └── <skill-name>/
