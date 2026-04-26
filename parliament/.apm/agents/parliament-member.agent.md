@@ -1,8 +1,9 @@
 ---
 name: parliament-member
 description: "議会議員エージェント。スマートエージェント（議長）のもとで、特定の関心事（Concern）に基づき、提案やコードを批判的にレビューし、合意を形成する。"
+model: "claude-sonnet-4-6"
 user-invocable: false
-tools: [read, edit, search, execute, agent]
+tools: [read, search, agent]
 ---
 
 # Member サブエージェント テンプレート

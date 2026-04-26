@@ -1,6 +1,8 @@
 ---
 name: refine-loop
 description: "反復改善ループエージェント。成果物（コード・設計・計画）を受け取り、バイアスフリーな新規レビュアーサブエージェントを繰り返し dispatch して品質を収束させる。Verify フェーズの自己評価ループを置き換える。"
+model: "claude-sonnet-4-6"
+user-invocable: false
 tools: [read, edit, search, execute, agent]
 ---
 
@@ -89,6 +91,9 @@ max_iterations: 3
 | 同一 Fix Rule が **3回以上** 出現 | `ESCALATE` | ループ終了、呼び出し元に設計問題として返す |
 | [critical] タグが追加・削除された | `ABORT` | エラー終了 |
 
+> **複数条件の同時成立時の優先順位**: `ABORT` > `ESCALATE` > `MAX_ITER` > `CONVERGED`
+> 例: Iter 3 で「Fix Rule が3回出現」かつ「[critical] 未達 0件 2連続」が同時に成立した場合、`ESCALATE` を優先する。根本原因パターンが収束せずに繰り返されているため、呼び出し元に設計上の問題として返す方が安全。
+
 #### 1-c. 修正適用（収束していない場合）
 
 1. Unclear Points の中から最優先テーマを1つ選ぶ
@@ -112,6 +117,15 @@ max_iterations: 3
 
 修正前にレジャーを参照し、既存パターンとの一致を確認する。
 
+### Fix Rule の照合ルール
+
+Fix Rule の「同一性」は **表面テキストの一致ではなく根本原因クラスの一致** で判定する。
+
+- **大文字小文字を無視**: `Null Check Missing` と `null check missing` は同一
+- **同義表現を同一視**: 「null チェック漏れ」「NPE ガード不足」「null pointer guard」は根本原因クラス `null-safety` として統一する
+- **判定のヒューリスティクス**: 2つの Fix Rule が「同じコード変更で解決できる問題を指している」なら同一クラスとして扱う
+- **パターン名の正規化**: レジャーへの登録時は動詞句ではなく名詞句（例：`null-safety` `input-validation` `error-propagation`）を推奨
+
 ---
 
 ## 出力フォーマット
@@ -123,7 +137,7 @@ max_iterations: 3
 
 - **ステータス**: CONVERGED / MAX_ITER / ESCALATE / ABORT
 - **実行回数**: N / {max_iterations}
-- **最終 Accuracy**: XX%（ABORT 時は N/A）
+- **最終 Accuracy**: XX%（最終イテレーションの値。累積平均ではない。ABORT 時は N/A）
 
 ### イテレーション別サマリー
 | Iter | SUCCESS/FAILURE | Accuracy | 適用テーマ |
