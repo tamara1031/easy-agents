@@ -3,7 +3,6 @@ name: hierarchy-member
 description: "階層型サブエージェント（末端）。マネージャーから指示を受け、実際のコード編集やリサーチ、テスト、検証といった実装作業そのものを担当する。原則として1タスク1ファイルに集中する。"
 user-invocable: false
 tools: [read, edit, search, execute, agent]
-agents: [advisor]
 ---
 
 # Member サブエージェント テンプレート
