@@ -1,0 +1,38 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  APM_VERSION: "0.9.2"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install APM
+        run: |
+          curl -fsSL "https://github.com/microsoft/apm/releases/download/v${APM_VERSION}/apm-linux-x86_64.tar.gz" \
+            | tar xz -C /tmp
+          sudo mv /tmp/apm /usr/local/bin/apm
+          apm --version
+
+      - name: Validate package structure
+        run: |
+          for pkg in easy-agent advisor parliament taskforce memoir; do
+            [ -f "$pkg/apm.yml" ] || { echo "::error::$pkg/apm.yml missing"; exit 1; }
+            count=$(find "$pkg/.apm" -name '*.md' -o -name '*.json' -o -name '*.py' -o -name '*.yml' 2>/dev/null | wc -l)
+            [ "$count" -gt 0 ] || { echo "::error::$pkg/.apm has no source files"; exit 1; }
+            echo "  $pkg: $count source files"
+          done
+
+      - name: Install dependencies
+        run: apm install --no-policy
+
+      - name: Audit
+        run: apm audit

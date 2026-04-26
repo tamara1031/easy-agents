@@ -1,6 +1,6 @@
 .claude/
-.github/
-!.github/workflows/
+.github/agents/
+.github/skills/
 
 # APM dependencies
 apm_modules/
