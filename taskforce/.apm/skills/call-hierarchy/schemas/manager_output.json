@@ -142,10 +142,15 @@
         "additional_persona": {
             "type": "object",
             "required": [
+                "specialty",
                 "background",
                 "reason"
             ],
             "properties": {
+                "specialty": {
+                    "type": "string",
+                    "description": "専門分野 (例: OAuth 2.0 / JWT 専門家、パフォーマンスチューニング専門家)"
+                },
                 "background": {
                     "type": "string",
                     "description": "背景設定"

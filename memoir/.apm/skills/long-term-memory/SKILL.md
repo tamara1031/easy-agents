@@ -237,6 +237,20 @@ python skills/long-term-memory/scripts/memory_delete.py \
 | プロジェクト | `bridge`, `my-copilot` | 対象プロジェクト |
 | 種別 | `fact`, `rule`, `pattern`, `procedure` | 知識の性質 |
 
+### easy-agent Auto-Memory タグ (easy-agent の Auto-Memory Protocol が使用する予約タグ)
+
+easy-agent の `long-term-memory` 自動保存プロトコルでは、以下のタグを使用します。他のタグと組み合わせて付与すること。
+
+| タグ | 発火タイミング | 意味 |
+| :--- | :--- | :--- |
+| `user` | ユーザーの役割・専門性・ドメインが初めて言及されたとき | ユーザーの現在の役割・スキルレベル・経験事実 |
+| `user-pref` | ユーザーの行動傾向・好み・将来の意向が確認されたとき | プロジェクト成果物に紐付かない個人の傾向 |
+| `feedback` | Phase Gate で APPROVED かつ明示的フィードバックがあったとき | エージェントの行動選択に対する是認・訂正ルール |
+| `rule` | `feedback` と同時に付与 | ルール化すべき判断基準 (Why→How to apply 形式で記述) |
+| `project` | Phase Gate で APPROVED かつプロジェクト状態が変化したとき | 変更対象ファイル・フェーズ状態・主要成果物の変化記録 |
+| `project-rule` | `project` と同時に付与 | プロジェクト固有の規約・制約 |
+| `reference` | 外部システムの URL・ボード・チャンネルが言及されたとき | 参照先リンク・外部リソース |
+
 **タグ命名規則**:
 
 - 小文字のみ、英数字とハイフンのみ使用

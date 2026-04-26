@@ -25,7 +25,10 @@ Explore → Deliberate → Plan → Implement → Verify → Synthesize
 | REVISE | 同フェーズの修正・再実行 |
 | DELEGATE | 専門エージェントへ委譲 (Parliament/Hierarchy) |
 | LOOPBACK | 前フェーズへ戻る |
-| ESCALATE | ユーザー確認が必要 |
+| ESCALATE | 判断不能。`call-advisor` スキル経由で Advisor (Opus) に相談し、助言に基づいて方針を決定する |
+| STOP | 処理を停止。ユーザーへ現在の状態を報告して終了する (重大なリスク・Advisor が STOP を返した場合) |
+
+> **ESCALATE vs STOP の使い分け**: ESCALATE は「Advisor に相談すれば解決可能」な場合に使用する。Advisor が STOP を返した場合、またはリスクが重大でユーザーの直接判断が必要な場合は STOP を選択する。
 
 ### ゲート通過条件の例
 
