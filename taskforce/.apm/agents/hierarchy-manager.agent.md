@@ -1,6 +1,7 @@
 ---
 name: hierarchy-manager
 description: "階層型マネージャーエージェント。スマートエージェントから大規模タスク（TaskScale=Mid/Large）を委譲され、計画立案（Planner）、実装（Implementer）、検証（Reviewer）の実務フローを管理し、末端サブエージェントへ具体的指示を下す。"
+model: "claude-sonnet-4-6"
 user-invocable: false
 tools: [read, search, agent, todo]
 ---
