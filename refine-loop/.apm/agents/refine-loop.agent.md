@@ -122,7 +122,7 @@ max_iterations: 3
 
 - **ステータス**: CONVERGED / MAX_ITER / ESCALATE / ABORT
 - **実行回数**: N / {max_iterations}
-- **最終 Accuracy**: XX%
+- **最終 Accuracy**: XX%（ABORT 時は N/A）
 
 ### イテレーション別サマリー
 | Iter | SUCCESS/FAILURE | Accuracy | 適用テーマ |
@@ -135,6 +135,11 @@ max_iterations: 3
 
 ### Fix Rule レジャー（本ループ内で発見）
 - <pattern>
+
+### ABORT / ESCALATE 時の回復ガイダンス（状況に応じて追記）
+- **ABORT（[critical] タグなし）**: requirements_checklist に最低1つ [critical] タグを付けて再呼び出し
+- **ABORT（dispatch 不可）**: `agent` ツールが利用可能な環境（easy-agent 直下など）で refine-loop を呼び出す
+- **ESCALATE**: 同一 Fix Rule が3回出現。成果物に設計上の問題がある可能性が高い。呼び出し元の Phase Gate で Advisory または Parliament へ委譲する
 ```
 
 ---
