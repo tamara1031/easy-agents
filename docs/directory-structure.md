@@ -18,6 +18,7 @@ easy-agents/
 ├── advisor/                            # 戦略アドバイザー (Opus)
 ├── parliament/                         # 合意形成 (議会モデル)
 ├── taskforce/                          # 階層型タスク実行
+├── refine-loop/                        # 反復改善ループ (Verify フェーズ)
 └── memoir/                             # ベクター長期記憶
 ```
 
@@ -148,3 +149,19 @@ memoir/
 ```
 
 `memoir` は他パッケージと異なり `agents/` を持たず、`scripts/` 経由で ChromaDB 操作を実行するスキル単独パッケージとして構成される。
+
+### refine-loop
+```
+refine-loop/
+├── .apm/
+│   ├── agents/
+│   │   └── refine-loop.agent.md            # 反復改善ループエージェント (user-invocable: false)
+│   └── skills/
+│       └── refine-loop/
+│           └── SKILL.md                    # ループ仕様・収束判定・Fix Rule レジャー
+├── apm.yml                                 # 宣言依存なし
+├── README.md
+└── .gitignore
+```
+
+`refine-loop` は `schemas/` `templates/` `references/` を持たず、エージェント定義とスキル定義のみで構成される最小パッケージ。レビュアー成果物は呼び出し元成果物そのものであり、固定の入出力スキーマを持たない。

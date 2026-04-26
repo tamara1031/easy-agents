@@ -21,6 +21,7 @@ easy-agent (統合オーケストレーター)
    ├─→ advisor        : 戦略的判断 (Opus)
    ├─→ parliament     : 設計コンセンサス (多視点討議)
    ├─→ taskforce      : 実装実行 (Plan→Implement→Review)
+   ├─→ refine-loop    : Verify フェーズの反復改善 (バイアスフリーレビュー)
    └─→ memoir         : 長期記憶 (ChromaDB)
 ```
 
@@ -32,4 +33,5 @@ easy-agent (統合オーケストレーター)
 | advisor | 0.1.0 | 戦略的アドバイザー (Opus) |
 | parliament | 0.1.0 | 合意形成・設計討議 |
 | taskforce | 0.1.0 | 階層型タスク実行 |
+| refine-loop | 0.1.0 | 反復改善ループ (Verify フェーズ) |
 | memoir | 0.1.0 | ベクターDB長期記憶 |

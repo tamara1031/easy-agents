@@ -12,3 +12,4 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-004](./ADR-004-vector-memory.md) | ベクターDB長期記憶 (ChromaDB) | Accepted |
 | [ADR-005](./ADR-005-apm-packaging.md) | APM によるパッケージ管理 | Accepted |
 | [ADR-006](./ADR-006-phase-gate-protocol.md) | Phase Gate Protocol | Accepted |
+| [ADR-007](./ADR-007-refine-loop-pattern.md) | refine-loop パッケージ分離 (バイアスフリー反復改善) | Accepted |
