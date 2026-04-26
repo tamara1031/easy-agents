@@ -6,6 +6,7 @@ license: MIT
 target: [claude, copilot]
 type: hybrid
 dependencies:
-  apm: []
+  apm:
+    - tamara1031/easy-agents/advisor
   mcp: []
 scripts: {}
