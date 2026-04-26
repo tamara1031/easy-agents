@@ -8,13 +8,14 @@
 | call-advisor | advisor | ❌ | エージェントが判断分岐点に達したとき |
 | call-parliament | parliament | ❌ | 設計討議・多角的検討が必要なとき |
 | call-hierarchy | taskforce | ❌ | 大規模実装タスクを委譲するとき |
+| refine-loop | refine-loop | ❌ | Verify フェーズで成果物の反復改善が必要なとき |
 | empirical-prompt-tuning | (mizchi/skills) | ✅ | プロンプト改善ループを回すとき |
 
 ---
 
 ## long-term-memory
 
-**パス**: `memoir/skills/long-term-memory/SKILL.md`
+**パス**: `memoir/.apm/skills/long-term-memory/SKILL.md`
 
 **インフラ**:
 - バックエンド: ChromaDB 0.6.3 (Docker)
@@ -52,7 +53,7 @@
 
 ## call-advisor
 
-**パス**: `advisor/skills/call-advisor/SKILL.md`
+**パス**: `advisor/.apm/skills/call-advisor/SKILL.md`
 
 **コンセプト**: Advisor パターン。実行エージェント (Sonnet/Haiku) が判断分岐点で Opus エージェントに戦略的助言を求める。
 
@@ -92,7 +93,7 @@
 
 ## call-parliament
 
-**パス**: `parliament/skills/call-parliament/SKILL.md`
+**パス**: `parliament/.apm/skills/call-parliament/SKILL.md`
 
 **コンセプト**: 議会モデル。大きな目標を複数トピックに分解し、多視点討議でコンセンサスを形成。
 
@@ -125,7 +126,7 @@
 
 ## call-hierarchy
 
-**パス**: `taskforce/skills/call-hierarchy/SKILL.md`
+**パス**: `taskforce/.apm/skills/call-hierarchy/SKILL.md`
 
 **コンセプト**: 階層型タスク実行。大規模タスクを Plan→Implement→Review サイクルで品質保証しながら実装。
 
@@ -169,6 +170,54 @@ TODO → IN_PROGRESS → IN_REVIEW → APPROVED
                   ↘ REJECTED → TODO (再キュー)
 Any → ERROR
 ```
+
+---
+
+## refine-loop
+
+**パス**: `refine-loop/.apm/skills/refine-loop/SKILL.md`
+
+**コンセプト**: 反復改善ループ。「実行 → バイアスフリーレビュー → 修正 → 再レビュー」を `[critical]` 要件が 2 連続で全達成するまで繰り返す。`empirical-prompt-tuning` の原理を汎用成果物 (コード・設計・計画) の品質改善に拡張したもの。
+
+**呼び出し方**: `Skill` ツール経由ではなく、`agent` ツールで `refine-loop` エージェントを直接 dispatch する (easy-agent の Verify フェーズで自動起動)。
+
+**入力パラメータ**:
+
+| パラメータ | デフォルト | 説明 |
+|---|---|---|
+| `subject` | (必須) | 対象成果物の説明とファイルパス |
+| `requirements_checklist` | (必須) | 要件リスト (最低 1 つ `[critical]` タグ必須) |
+| `task_context` | (必須) | 背景・制約・意図 |
+| `max_iterations` | 3 | 最大反復数 |
+
+**収束判定 (優先順位順)**:
+
+| ステータス | 条件 |
+|---|---|
+| `ABORT` | [critical] タグの追加・削除 / `agent` ツールが利用不可 |
+| `ESCALATE` | 同一 Fix Rule が **3 回以上**出現 |
+| `MAX_ITER` | `max_iterations` に到達 |
+| `CONVERGED` | [critical] 未達 0 件 が **2 連続** |
+
+> **複数条件の同時成立時の優先順位**: `ABORT` > `ESCALATE` > `MAX_ITER` > `CONVERGED`
+
+**評価軸**:
+
+| 軸 | 取得方法 | 意味 |
+|---|---|---|
+| 成功/失敗 | `[critical]` 項目が全て ○ か | 最低ライン |
+| Accuracy | 達成率 (%) — **最終イテレーション**の値 (累積平均ではない) | 部分達成の度合い |
+| Unclear points | レビュアーの自己報告 | 定性的改善材料 |
+| 裁量判断 | レビュアーの自己報告 | 暗黙仕様の発見 |
+| Retries | レビュアーの自己報告 | 成果物の曖昧さの信号 |
+
+**Fix Rule レジャー**: 同一の Fix Rule (根本原因クラス) が 3 回出現すると `ESCALATE` トリガー。「同一性」は表面テキストの一致ではなく根本原因クラスで判定 (大文字小文字無視、同義表現を統一、名詞句・ケバブケース推奨)。
+
+**不変条件**:
+1. レビュアーは毎回新規サブエージェント (同一エージェントの再利用禁止)
+2. `[critical]` タグはループ開始後に固定 (追加・削除禁止)
+3. 1 イテレーション = 1 テーマの修正
+4. 自己評価禁止 (`agent` ツールが利用不可なら ABORT)
 
 ---
 

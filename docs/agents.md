@@ -5,17 +5,18 @@
 | エージェント | モジュール | user-invocable | モデル | ツール |
 |---|---|---|---|---|
 | easy-agent | easy-agent | ✅ | Sonnet | read, edit, search, execute, agent, todo |
-| advisor | advisor | ❌ | **Opus 4.7** | read, search |
+| advisor | advisor | ❌ | **Opus 4.7** | (なし) |
 | parliament-chairperson | parliament | ❌ | Sonnet | read, search, agent |
-| parliament-member | parliament | ❌ | Sonnet | read, edit, search, execute, agent |
+| parliament-member | parliament | ❌ | Sonnet | read, search, agent |
 | hierarchy-manager | taskforce | ❌ | Sonnet | read, search, agent, todo |
 | hierarchy-member | taskforce | ❌ | Sonnet | read, edit, search, execute, agent |
+| refine-loop | refine-loop | ❌ | Sonnet | read, edit, search, execute, agent |
 
 ---
 
 ## easy-agent
 
-**パス**: `easy-agent/agents/easy-agent.agent.md`
+**パス**: `easy-agent/.apm/agents/easy-agent.agent.md`
 
 **役割**: ユニバーサルオーケストレーター。全ユーザーリクエストの単一エントリーポイント。
 
@@ -39,7 +40,7 @@ Explore → Deliberate → Plan → Implement → Verify → Synthesize
 | Deliberate | agent | parliament-chairperson |
 | Plan | todo | hierarchy-manager (Large) |
 | Implement | edit, execute | hierarchy-manager (4ファイル以上) |
-| Verify | execute | — |
+| Verify | execute, agent | **refine-loop** (バイアスフリー反復改善) |
 | Synthesize | — | — |
 
 ### Phase Gate Protocol
@@ -54,15 +55,15 @@ Explore → Deliberate → Plan → Implement → Verify → Synthesize
 
 ### フォールバックチェーン
 
-- Verify 失敗 → Implement 再試行 (最大5回)
-- Deliberate 停滞 → Explore 再試行
+- Verify 失敗 → `refine-loop` スキル内で処理 (max_iterations=3)。`ESCALATE` を返した場合のみ Implement へ戻る
+- Deliberate 停滞 → Explore 再試行 (最大1回)
 - Plan 破綻 → Deliberate または Explore 再試行
 
 ---
 
 ## advisor
 
-**パス**: `advisor/agents/advisor.agent.md`
+**パス**: `advisor/.apm/agents/advisor.agent.md`
 
 **役割**: 戦略的アドバイザー。Opusモデルで高品質な判断を提供。実行は行わない。
 
@@ -94,7 +95,7 @@ Explore → Deliberate → Plan → Implement → Verify → Synthesize
 
 ## parliament-chairperson
 
-**パス**: `parliament/agents/parliament-chairperson.agent.md`
+**パス**: `parliament/.apm/agents/parliament-chairperson.agent.md`
 
 **役割**: 議会議長。トピックを分析し、メンバーペルソナを生成、討議を進行してコンセンサスを形成。
 
@@ -121,7 +122,7 @@ Explore → Deliberate → Plan → Implement → Verify → Synthesize
 
 ## parliament-member
 
-**パス**: `parliament/agents/parliament-member.agent.md`
+**パス**: `parliament/.apm/agents/parliament-member.agent.md`
 
 **役割**: 議員。割り当てられたペルソナの視点で批判的にレビューし、合意形成に参加。
 
@@ -138,7 +139,7 @@ Explore → Deliberate → Plan → Implement → Verify → Synthesize
 
 ## hierarchy-manager
 
-**パス**: `taskforce/agents/hierarchy-manager.agent.md`
+**パス**: `taskforce/.apm/agents/hierarchy-manager.agent.md`
 
 **役割**: 階層型マネージャー。大規模タスクを Plan→Implement→Review サイクルで管理。
 
@@ -159,7 +160,7 @@ Implementer → Reviewer → (REVISE の場合) → Implementer (最大5回)
 
 ## hierarchy-member
 
-**パス**: `taskforce/agents/hierarchy-member.agent.md`
+**パス**: `taskforce/.apm/agents/hierarchy-member.agent.md`
 
 **役割**: 階層型サブエージェント。Manager から指示を受け、実際の実装・検証を実行。
 
@@ -174,3 +175,39 @@ Implementer → Reviewer → (REVISE の場合) → Implementer (最大5回)
 - テストハック検出
 - API/パターンの実在確認
 - 要件充足検証
+
+---
+
+## refine-loop
+
+**パス**: `refine-loop/.apm/agents/refine-loop.agent.md`
+
+**役割**: 反復改善ループ。easy-agent の Verify フェーズで自己評価ループ (REVISE) の代わりに呼び出され、毎イテレーションで**新規のブランクスレートサブエージェント**をレビュアーとして dispatch して成果物の品質を収束させる。
+
+### 入力パラメータ
+
+| パラメータ | 必須 | 説明 |
+|---|---|---|
+| `subject` | ✅ | 対象成果物の説明とファイルパス |
+| `requirements_checklist` | ✅ | 要件リスト (最低 1 つ `[critical]` タグ必須) |
+| `task_context` | ✅ | 背景・制約・意図 |
+| `max_iterations` | ❌ | 最大反復数 (デフォルト 3) |
+
+### 収束判定 (優先順位順)
+
+| ステータス | 条件 | 対応 |
+|---|---|---|
+| `ABORT` | [critical] タグの追加・削除を検知 / `agent` ツールが利用不可 | エラー終了 |
+| `ESCALATE` | 同一 Fix Rule が **3 回以上**出現 | 設計上の問題として呼び出し元の Phase Gate へ返す |
+| `MAX_ITER` | `max_iterations` に到達 | 残存 issues を報告して終了 |
+| `CONVERGED` | [critical] 未達 0 件 が **2 連続** | 完了レポート出力 |
+
+> **複数条件の同時成立時の優先順位**: `ABORT` > `ESCALATE` > `MAX_ITER` > `CONVERGED`
+
+### 不変条件 (制約)
+
+1. **レビュアーは毎回新規サブエージェント** — 同一エージェントの再利用禁止
+2. **[critical] タグはループ開始後に固定** — 追加・削除禁止
+3. **1 イテレーション = 1 テーマの修正** — 因果関係を明確に保つ
+4. **自己評価禁止** — refine-loop 自身がレビュアー役を兼任しない (`agent` ツールが利用不可なら ABORT)
+5. **ESCALATE は設計問題のシグナル** — ループ内では解決せず呼び出し元に返す

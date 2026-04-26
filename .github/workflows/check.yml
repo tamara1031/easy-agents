@@ -25,7 +25,7 @@ jobs:
 
       - name: Validate package structure
         run: |
-          for pkg in easy-agent advisor parliament taskforce memoir; do
+          for pkg in easy-agent advisor parliament taskforce refine-loop memoir; do
             [ -f "$pkg/apm.yml" ] || { echo "::error::$pkg/apm.yml missing"; exit 1; }
             count=$(find "$pkg/.apm" -name '*.md' -o -name '*.json' -o -name '*.py' -o -name '*.yml' 2>/dev/null | wc -l)
             [ "$count" -gt 0 ] || { echo "::error::$pkg/.apm has no source files"; exit 1; }
