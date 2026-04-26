@@ -6,7 +6,6 @@ target: [claude, copilot]
 dependencies:
   apm:
     - tamara1031/easy-agents/easy-agent
-    - mizchi/skills/empirical-prompt-tuning
   mcp: []
 scripts:
   install: apm install --no-policy

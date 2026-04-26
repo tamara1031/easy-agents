@@ -1,0 +1,9 @@
+{
+    "name": "taskforce",
+    "version": "0.1.0",
+    "description": "大規模タスクを Plan→Implement→Review サイクルで自律完遂する階層型エージェントパッケージ。Orchestrator が Manager を並列ディスパッチし Generator-Verifier パターンで品質ゲートを通過する",
+    "author": {
+        "name": "tamara1031"
+    },
+    "license": "MIT"
+}
