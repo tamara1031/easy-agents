@@ -1,4 +1,12 @@
-# refine-loop — 反復改善ループスキル
+---
+name: call-refine-loop
+description: "refine-loop (反復改善ループ) を起動するスキル。成果物（コード・設計・計画）を refine-loop エージェントに委譲し、毎イテレーションで新規ブランクスレートサブエージェントによるバイアスフリーレビューを行って品質を収束させる。Verify フェーズで自己評価ループ (REVISE) の代わりに使用する。"
+user-invocable: false
+tools: [read, edit, search, execute, agent]
+agents: [refine-loop]
+---
+
+# call-refine-loop — 反復改善ループ呼び出しスキル
 
 ## Purpose (目的)
 

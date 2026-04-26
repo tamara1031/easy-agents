@@ -170,6 +170,6 @@ refine-loop/
     ├── agents/
     │   └── refine-loop.agent.md    # refine-loop エージェント定義（user-invocable: false）
     └── skills/
-        └── refine-loop/
+        └── call-refine-loop/
             └── SKILL.md            # スキル定義（ループ仕様・収束判定・Fix Rule レジャー）
 ```

@@ -8,7 +8,7 @@
 | call-advisor | advisor | ❌ | エージェントが判断分岐点に達したとき |
 | call-parliament | parliament | ❌ | 設計討議・多角的検討が必要なとき |
 | call-hierarchy | taskforce | ❌ | 大規模実装タスクを委譲するとき |
-| refine-loop | refine-loop | ❌ | Verify フェーズで成果物の反復改善が必要なとき |
+| call-refine-loop | refine-loop | ❌ | Verify フェーズで成果物の反復改善が必要なとき |
 | empirical-prompt-tuning | (mizchi/skills) | ✅ | プロンプト改善ループを回すとき |
 
 ---
@@ -173,9 +173,9 @@ Any → ERROR
 
 ---
 
-## refine-loop
+## call-refine-loop
 
-**パス**: `refine-loop/.apm/skills/refine-loop/SKILL.md`
+**パス**: `refine-loop/.apm/skills/call-refine-loop/SKILL.md`
 
 **コンセプト**: 反復改善ループ。「実行 → バイアスフリーレビュー → 修正 → 再レビュー」を `[critical]` 要件が 2 連続で全達成するまで繰り返す。`empirical-prompt-tuning` の原理を汎用成果物 (コード・設計・計画) の品質改善に拡張したもの。
 
