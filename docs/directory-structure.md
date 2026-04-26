@@ -157,7 +157,7 @@ refine-loop/
 │   ├── agents/
 │   │   └── refine-loop.agent.md            # 反復改善ループエージェント (user-invocable: false)
 │   └── skills/
-│       └── refine-loop/
+│       └── call-refine-loop/
 │           └── SKILL.md                    # ループ仕様・収束判定・Fix Rule レジャー
 ├── apm.yml                                 # 宣言依存なし
 ├── README.md
