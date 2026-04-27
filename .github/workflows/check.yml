@@ -208,18 +208,26 @@ jobs:
 
       - name: Lint role canonical sources (ADR-012)
         run: |
-          # Every *.agent.md that contains [role: instruction] sections must have
-          # at least one .md file in <package>/.apm/instructions/.
-          # Every *.agent.md that contains [role: hook] sections must have
-          # at least one .md file in <package>/.apm/hooks/.
-          # This enforces the Assembled View / Canonical Source split from ADR-012.
+          # ADR-012 §2 designates only "Assembled View" agent files as requiring
+          # Canonical Source files in .apm/instructions/ and .apm/hooks/.
+          # An Assembled View is identified by the "Assembled View" marker in its
+          # header (e.g. easy-agent.agent.md).  Simple agent files (advisor,
+          # parliament-*, etc.) carry [role: instruction] tags for taxonomy
+          # annotation purposes (ADR-010) but are not Assembled Views — their
+          # sections ARE the canonical source already.  Canonical Source
+          # enforcement therefore applies only to Assembled View files.
           fail=0
           for agent in */.apm/agents/*.agent.md; do
             pkg=$(echo "$agent" | cut -d/ -f1)
+            # Skip files that are not declared Assembled Views
+            if ! grep -qF 'Assembled View' "$agent"; then
+              echo "  ○ $agent: not an Assembled View — skipping canonical source check"
+              continue
+            fi
             if grep -qF '[role: instruction]' "$agent"; then
               count=$(find "$pkg/.apm/instructions" -name '*.md' 2>/dev/null | wc -l)
               if [ "$count" -eq 0 ]; then
-                echo "::error file=$agent::has [role: instruction] sections but $pkg/.apm/instructions/ has no .md files (ADR-012)"
+                echo "::error file=$agent::Assembled View has [role: instruction] sections but $pkg/.apm/instructions/ has no .md files (ADR-012)"
                 fail=1
               else
                 echo "  ✓ $pkg: instructions/ canonical source present ($count file(s))"
@@ -228,7 +236,7 @@ jobs:
             if grep -qF '[role: hook]' "$agent"; then
               count=$(find "$pkg/.apm/hooks" -name '*.md' 2>/dev/null | wc -l)
               if [ "$count" -eq 0 ]; then
-                echo "::error file=$agent::has [role: hook] sections but $pkg/.apm/hooks/ has no .md files (ADR-012)"
+                echo "::error file=$agent::Assembled View has [role: hook] sections but $pkg/.apm/hooks/ has no .md files (ADR-012)"
                 fail=1
               else
                 echo "  ✓ $pkg: hooks/ canonical source present ($count file(s))"
