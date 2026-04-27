@@ -47,6 +47,23 @@ jobs:
           done
           [ "$fail" -eq 0 ]
 
+      - name: Lint ADR index completeness
+        run: |
+          # Every docs/adr/ADR-XXX-*.md file must be referenced from
+          # docs/adr/README.md. Catches the regression where a new ADR is
+          # created but never linked from the index (e.g. ADR-008).
+          fail=0
+          for adr in docs/adr/ADR-*.md; do
+            name=$(basename "$adr")
+            if ! grep -qF "$name" docs/adr/README.md; then
+              echo "::error file=docs/adr/README.md::$name is not referenced in the ADR index"
+              fail=1
+            else
+              echo "  ✓ $name"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
       - name: Install dependencies
         run: apm install --no-policy
 
