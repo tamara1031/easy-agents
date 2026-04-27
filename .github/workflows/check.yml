@@ -64,6 +64,37 @@ jobs:
           done
           [ "$fail" -eq 0 ]
 
+      - name: Lint sister schema common base
+        run: |
+          # parliament and taskforce orchestrator_state.json declare each
+          # other as 姉妹スキーマ ('sister schemas') and share a common
+          # base of task/topic statuses. Extensions (e.g. taskforce-only
+          # SKIPPED) are allowed, but the common base must be present in
+          # both. This catches silent drift where one side adds a status
+          # the other forgets to mirror.
+          python3 - <<'PY'
+          import json, sys
+          BASE = {"TODO", "IN_PROGRESS", "IN_REVIEW", "APPROVED", "REJECTED", "ERROR"}
+          SISTERS = [
+              ("parliament/.apm/skills/call-parliament/schemas/orchestrator_state.json", "topics"),
+              ("taskforce/.apm/skills/call-hierarchy/schemas/orchestrator_state.json",   "tasks"),
+          ]
+          fail = False
+          for path, key in SISTERS:
+              with open(path) as f:
+                  schema = json.load(f)
+              enum = set(schema["properties"][key]["items"]["properties"]["status"]["enum"])
+              missing = BASE - enum
+              if missing:
+                  print(f"::error file={path}::{key}[].status enum missing common base {sorted(missing)}")
+                  fail = True
+              else:
+                  extras = sorted(enum - BASE)
+                  extra_note = f" (extras: {extras})" if extras else ""
+                  print(f"  ✓ {path}: {key}[].status base OK{extra_note}")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 
