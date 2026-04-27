@@ -172,20 +172,62 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint role tag completeness (ADR-010 / ADR-011)
+        run: |
+          # Every H2 heading (## ...) outside code fences in every
+          # */.apm/agents/*.agent.md must carry at least one [role: ...] tag.
+          # This enforces that all sections are classified under ADR-010's
+          # taxonomy — the companion lint "Lint role taxonomy tag values"
+          # handles the closed-set check; this step catches sections that
+          # were added without a tag at all.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          H2_RE = re.compile(r"^## ")
+          fail = False
+          for path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              in_fence = False
+              with open(path) as f:
+                  for lineno, line in enumerate(f, 1):
+                      stripped = line.lstrip()
+                      if stripped.startswith("```"):
+                          in_fence = not in_fence
+                          continue
+                      if in_fence or not H2_RE.match(line):
+                          continue
+                      if "`[role:" not in line:
+                          print(
+                              f"::error file={path},line={lineno}::"
+                              f"H2 heading has no [role: ...] tag — every H2 "
+                              f"must be annotated (ADR-010)"
+                          )
+                          fail = True
+                      else:
+                          print(f"  ✓ {path}:{lineno} tagged")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Lint role canonical sources (ADR-012)
         run: |
-          # Every *.agent.md that contains [role: instruction] sections must have
-          # at least one .md file in <package>/.apm/instructions/.
-          # Every *.agent.md that contains [role: hook] sections must have
-          # at least one .md file in <package>/.apm/hooks/.
-          # This enforces the Assembled View / Canonical Source split from ADR-012.
+          # ADR-012 §2 designates only "Assembled View" agent files as requiring
+          # Canonical Source files in .apm/instructions/ and .apm/hooks/.
+          # An Assembled View is identified by the "Assembled View" marker in its
+          # header (e.g. easy-agent.agent.md).  Simple agent files (advisor,
+          # parliament-*, etc.) carry [role: instruction] tags for taxonomy
+          # annotation purposes (ADR-010) but are not Assembled Views — their
+          # sections ARE the canonical source already.  Canonical Source
+          # enforcement therefore applies only to Assembled View files.
           fail=0
           for agent in */.apm/agents/*.agent.md; do
             pkg=$(echo "$agent" | cut -d/ -f1)
+            # Skip files that are not declared Assembled Views
+            if ! grep -qF 'Assembled View' "$agent"; then
+              echo "  ○ $agent: not an Assembled View — skipping canonical source check"
+              continue
+            fi
             if grep -qF '[role: instruction]' "$agent"; then
               count=$(find "$pkg/.apm/instructions" -name '*.md' 2>/dev/null | wc -l)
               if [ "$count" -eq 0 ]; then
-                echo "::error file=$agent::has [role: instruction] sections but $pkg/.apm/instructions/ has no .md files (ADR-012)"
+                echo "::error file=$agent::Assembled View has [role: instruction] sections but $pkg/.apm/instructions/ has no .md files (ADR-012)"
                 fail=1
               else
                 echo "  ✓ $pkg: instructions/ canonical source present ($count file(s))"
@@ -194,7 +236,7 @@ jobs:
             if grep -qF '[role: hook]' "$agent"; then
               count=$(find "$pkg/.apm/hooks" -name '*.md' 2>/dev/null | wc -l)
               if [ "$count" -eq 0 ]; then
-                echo "::error file=$agent::has [role: hook] sections but $pkg/.apm/hooks/ has no .md files (ADR-012)"
+                echo "::error file=$agent::Assembled View has [role: hook] sections but $pkg/.apm/hooks/ has no .md files (ADR-012)"
                 fail=1
               else
                 echo "  ✓ $pkg: hooks/ canonical source present ($count file(s))"
@@ -202,6 +244,113 @@ jobs:
             fi
           done
           [ "$fail" -eq 0 ]
+
+      - name: Lint hook event vocabulary (ADR-011 Lint D)
+        run: |
+          # Every hook event name cited in .apm/hooks/*.md files and in
+          # [role: hook] sections of *.agent.md files must belong to the
+          # ADR-011 closed set.  Event names are extracted from:
+          #   - Backtick-quoted identifiers at the start of table cells
+          #     (e.g. `SessionStart`, `NExchangeElapsed[N=15]`)
+          #   - YAML-like blocks: lines starting with "event:" inside a hook
+          #     section (Form A of ADR-011)
+          # Modifier suffixes like [N=15] or [verdict=APPROVED] are stripped
+          # before comparison so parameterised forms pass the check.
+          python3 - <<'PY'
+          import re, sys, pathlib
+
+          ALLOWED_EVENTS = {
+              "SessionStart", "SessionEnd",
+              "PhaseGateComplete", "PhaseTransition",
+              "NExchangeElapsed", "OnExchange",
+              "PreToolUse", "PostToolUse", "OnUserMessage",
+          }
+          # Strip optional suffix: [...], (...), spaces
+          STRIP_SUFFIX_RE = re.compile(r"[\[\(].*")
+          # Backtick-quoted identifier in first table column or standalone
+          BACKTICK_EVENT_RE = re.compile(r"`([A-Z][A-Za-z]+(?:[\[\(][^\]`]*[\]\)])?)`")
+          # YAML-like form: event: <name>
+          YAML_EVENT_RE = re.compile(r"^\s*event:\s+`?([A-Z][A-Za-z]+(?:[\[\(][^\]`]*[\]\)])?)`?")
+
+          def extract_events(text, path):
+              """Return list of (event_base, lineno) from text."""
+              found = []
+              for lineno, line in enumerate(text.splitlines(), 1):
+                  for m in BACKTICK_EVENT_RE.finditer(line):
+                      base = STRIP_SUFFIX_RE.sub("", m.group(1)).strip()
+                      if base in ALLOWED_EVENTS or base not in {
+                          # reject obvious non-event PascalCase (e.g. JSON types)
+                          "APPROVED","REVISE","DELEGATE","LOOPBACK","ESCALATE","STOP",
+                          "TODO","IN_PROGRESS","IN_REVIEW","REJECTED","ERROR",
+                      }:
+                          if base[0].isupper() and base not in {
+                              "Claude","VS","Skill","JSON","YAML","ADR","APM",
+                              "Advocate","Reviewer","Compliance","Pragmatist",
+                              "Planner","Implementer","Manager","Member","Chairperson",
+                          }:
+                              found.append((base, lineno))
+                  m = YAML_EVENT_RE.match(line)
+                  if m:
+                      base = STRIP_SUFFIX_RE.sub("", m.group(1)).strip()
+                      found.append((base, lineno))
+              return found
+
+          def check_file(path, text):
+              fail = False
+              for base, lineno in extract_events(text, path):
+                  if base not in ALLOWED_EVENTS:
+                      print(
+                          f"::error file={path},line={lineno}::"
+                          f"unknown hook event '{base}' — must be one of "
+                          f"{sorted(ALLOWED_EVENTS)} (ADR-011)"
+                      )
+                      fail = True
+                  else:
+                      print(f"  ✓ {path}:{lineno} event '{base}'")
+              return fail
+
+          fail = False
+
+          # 1. Scan all .apm/hooks/*.md canonical source files
+          for path in sorted(pathlib.Path(".").glob("*/.apm/hooks/*.md")):
+              text = path.read_text()
+              fail |= check_file(path, text)
+
+          # 2. Scan [role: hook] sections in agent files
+          for path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = path.read_text()
+              # Extract only sections tagged [role: hook]
+              hook_sections = []
+              in_hook = False
+              current = []
+              current_start = 0
+              for lineno, line in enumerate(text.splitlines(), 1):
+                  if re.match(r"^## ", line):
+                      if in_hook and current:
+                          hook_sections.append((current_start, "\n".join(current)))
+                      in_hook = "`[role: hook]`" in line
+                      current = [line]
+                      current_start = lineno
+                  elif in_hook:
+                      current.append(line)
+              if in_hook and current:
+                  hook_sections.append((current_start, "\n".join(current)))
+
+              for start_lineno, section_text in hook_sections:
+                  for base, rel_lineno in extract_events(section_text, path):
+                      abs_lineno = start_lineno + rel_lineno - 1
+                      if base not in ALLOWED_EVENTS:
+                          print(
+                              f"::error file={path},line={abs_lineno}::"
+                              f"unknown hook event '{base}' in [role: hook] section "
+                              f"— must be one of {sorted(ALLOWED_EVENTS)} (ADR-011)"
+                          )
+                          fail = True
+                      else:
+                          print(f"  ✓ {path}:{abs_lineno} event '{base}'")
+
+          sys.exit(1 if fail else 0)
+          PY
 
       - name: Lint Fallback Chain vs Caller Response Contract (ADR-009 drift detection)
         run: |
