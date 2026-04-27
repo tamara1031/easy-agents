@@ -64,6 +64,23 @@ jobs:
           done
           [ "$fail" -eq 0 ]
 
+      - name: Lint stale 'smart-agent' references
+        run: |
+          # The orchestrator was renamed smart-agent → easy-agent. Fail
+          # if any package source or doc under tracked content contains
+          # the old name. Scans only authored source dirs (skips .github
+          # to avoid matching this lint's own text, vendored apm_modules,
+          # and docker compose files in memoir).
+          targets=(easy-agent advisor parliament taskforce refine-loop memoir docs CLAUDE.md)
+          if grep -rnE 'smart-agent|スマートエージェント' \
+               --include='*.md' --include='*.json' --include='*.yml' --include='*.yaml' \
+               --exclude-dir='apm_modules' --exclude-dir='docker' \
+               "${targets[@]}" ; then
+            echo "::error::stale 'smart-agent' / 'スマートエージェント' reference detected — rename to 'easy-agent'"
+            exit 1
+          fi
+          echo "  ✓ no stale 'smart-agent' references"
+
       - name: Lint sister schema common base
         run: |
           # parliament and taskforce orchestrator_state.json declare each
