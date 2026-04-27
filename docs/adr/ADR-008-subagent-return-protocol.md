@@ -86,5 +86,5 @@ refine-loop の ABORT は根本原因が2種類あり、対応方針が異なる
 
 ## 今後の課題
 
-- `call-parliament/SKILL.md` と `call-hierarchy/SKILL.md` にも同様の Caller Response Contract を追加することで対称性をさらに高められる（本 ADR のスコープ外）
+- ~~`call-parliament/SKILL.md` と `call-hierarchy/SKILL.md` にも同様の Caller Response Contract を追加することで対称性をさらに高められる（本 ADR のスコープ外）~~ → **解決済み (2026-04-27)**: `call-parliament/SKILL.md` と `call-hierarchy/SKILL.md` の双方に「呼び出し元の応答コントラクト (Caller Response Contract)」セクションを追加。議題/タスク単位の返却ステータスとオーケストレーター集約レベルの返却ステータスを2層構造で定義し、Relay Principle を明文化。これにより全サブエージェント（refine-loop / parliament / hierarchy）の SKILL.md がサブエージェント出力と呼び出し元応答の双方向コントラクトを持つ。
 - `advisor` の返却ステータス（PROCEED / CORRECT / ESCALATE / STOP）については、easy-agent の既存セクション「Advisory 判定後の処理フロー」が既に対応しており、今回の変更対象から除外した
