@@ -1,5 +1,7 @@
 # スキル構成
 
+> **役割タクソノミー**: Skill は「エージェントが持つ能力、実行が許される内容」。Agent (実行主体)、Instruction (普遍ルール)、Hook (定型作業) とは責務が分離される ([ADR-010](./adr/ADR-010-role-taxonomy.md))。
+
 ## スキル一覧
 
 | スキル | モジュール | user-invocable | 呼び出し方 |

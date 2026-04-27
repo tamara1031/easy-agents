@@ -1,5 +1,7 @@
 # エージェント構成
 
+> **役割タクソノミー**: Agent は「タスクの実行をする主体」。Skill (能力)、Instruction (普遍ルール)、Hook (定型作業) とは責務が分離される ([ADR-010](./adr/ADR-010-role-taxonomy.md))。`easy-agent.agent.md` 内の H2 セクションは `[role: agent identity | agent capability | instruction | hook]` でタグ付けされている。
+
 ## エージェント一覧
 
 | エージェント | モジュール | user-invocable | モデル | ツール |
