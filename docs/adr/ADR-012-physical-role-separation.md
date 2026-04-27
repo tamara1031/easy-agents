@@ -1,4 +1,4 @@
-# ADR-011: 役割別物理ファイル分離 (Instructions / Hooks の .apm/ 抽出)
+# ADR-012: 役割別物理ファイル分離 (Instructions / Hooks の .apm/ 抽出)
 
 - **ステータス**: Accepted
 - **決定日**: 2026-04-27
@@ -107,5 +107,6 @@ APM の `apm install` は現状 `.apm/instructions/` と `.apm/hooks/` を認識
 ## 関連決定
 
 - ADR-010: 役割明確化タクソノミー — 本 ADR が実現する物理分離の概念的基盤
+- ADR-011: Hook Specification Format & Trigger Event Vocabulary — 本 ADR が定める hooks/session-start.md 内の Hook Spec フォーマットの仕様基盤
 - ADR-009: Caller Response Contract Convention — Lint B (ステータス整合性検証) の対象規約
 - ADR-005: APM パッケージング — `.apm/` ディレクトリ構造の拡張

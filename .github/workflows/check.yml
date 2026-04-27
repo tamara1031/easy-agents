@@ -131,20 +131,61 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
-      - name: Lint role canonical sources (ADR-011)
+      - name: Lint role taxonomy tag values (ADR-010 / ADR-011)
+        run: |
+          # Every ``[role: <value>]`` tag applied to a heading in
+          # *.apm/agents/*.agent.md must use a value from the ADR-010
+          # closed set (agent identity | agent capability | instruction
+          # | hook). Catches typos and ad-hoc role names that drift away
+          # from the taxonomy. Only headings are checked — prose
+          # mentions like "tagged with [role: ...] for one of these
+          # values" are intentionally ignored. Code fences are also
+          # skipped so example tables in docs/templates do not produce
+          # false positives.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          ALLOWED = {"agent identity", "agent capability", "instruction", "hook"}
+          HEADING_RE = re.compile(r"^#{1,6}\s")
+          ROLE_TAG_RE = re.compile(r"`\[role:\s*([^`\]]+?)\s*\]`")
+          fail = False
+          for path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              in_fence = False
+              with open(path) as f:
+                  for lineno, line in enumerate(f, 1):
+                      stripped = line.lstrip()
+                      if stripped.startswith("```"):
+                          in_fence = not in_fence
+                          continue
+                      if in_fence or not HEADING_RE.match(line):
+                          continue
+                      for match in ROLE_TAG_RE.finditer(line):
+                          value = match.group(1).strip()
+                          if value not in ALLOWED:
+                              print(
+                                  f"::error file={path},line={lineno}::"
+                                  f"unknown [role: {value}] — must be one of "
+                                  f"{sorted(ALLOWED)} (ADR-010)"
+                              )
+                              fail = True
+                          else:
+                              print(f"  ✓ {path}:{lineno} [role: {value}]")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint role canonical sources (ADR-012)
         run: |
           # Every *.agent.md that contains [role: instruction] sections must have
           # at least one .md file in <package>/.apm/instructions/.
           # Every *.agent.md that contains [role: hook] sections must have
           # at least one .md file in <package>/.apm/hooks/.
-          # This enforces the Assembled View / Canonical Source split from ADR-011.
+          # This enforces the Assembled View / Canonical Source split from ADR-012.
           fail=0
           for agent in */.apm/agents/*.agent.md; do
             pkg=$(echo "$agent" | cut -d/ -f1)
             if grep -qF '[role: instruction]' "$agent"; then
               count=$(find "$pkg/.apm/instructions" -name '*.md' 2>/dev/null | wc -l)
               if [ "$count" -eq 0 ]; then
-                echo "::error file=$agent::has [role: instruction] sections but $pkg/.apm/instructions/ has no .md files (ADR-011)"
+                echo "::error file=$agent::has [role: instruction] sections but $pkg/.apm/instructions/ has no .md files (ADR-012)"
                 fail=1
               else
                 echo "  ✓ $pkg: instructions/ canonical source present ($count file(s))"
@@ -153,7 +194,7 @@ jobs:
             if grep -qF '[role: hook]' "$agent"; then
               count=$(find "$pkg/.apm/hooks" -name '*.md' 2>/dev/null | wc -l)
               if [ "$count" -eq 0 ]; then
-                echo "::error file=$agent::has [role: hook] sections but $pkg/.apm/hooks/ has no .md files (ADR-011)"
+                echo "::error file=$agent::has [role: hook] sections but $pkg/.apm/hooks/ has no .md files (ADR-012)"
                 fail=1
               else
                 echo "  ✓ $pkg: hooks/ canonical source present ($count file(s))"
@@ -170,22 +211,16 @@ jobs:
           # skill no longer defines (or vice-versa after a rename).
           python3 - <<'PY'
           import re, sys
-
-          agent_md = "easy-agent/.apm/agents/easy-agent.agent.md"
           skill_files = {
               "refine-loop": "refine-loop/.apm/skills/call-refine-loop/SKILL.md",
               "parliament":  "parliament/.apm/skills/call-parliament/SKILL.md",
               "hierarchy":   "taskforce/.apm/skills/call-hierarchy/SKILL.md",
           }
-
-          # Tokens that easy-agent's Fallback Chain attributes to each skill.
-          # Extracted from the "Verify — X", "Deliberate — X", "Implement — X" rows.
           attributed = {
               "refine-loop": {"ESCALATE", "MAX_ITER", "ABORT"},
               "parliament":  {"MAX_ROUNDS", "max_rejections"},
               "hierarchy":   {"max_rejections"},
           }
-
           fail = False
           for skill, tokens in attributed.items():
               path = skill_files[skill]
@@ -202,7 +237,6 @@ jobs:
                       fail = True
                   else:
                       print(f"  ✓ {skill}: '{token}' present in Caller Response Contract")
-
           sys.exit(1 if fail else 0)
           PY
 

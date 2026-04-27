@@ -16,4 +16,5 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-008](./ADR-008-subagent-return-protocol.md) | サブエージェント返却プロトコルの形式化 (Caller Response Contract) | Accepted |
 | [ADR-009](./ADR-009-caller-response-contract-convention.md) | Caller Response Contract Convention (Relay Principle / Two-layer / SSoT) | Accepted |
 | [ADR-010](./ADR-010-role-taxonomy.md) | 役割明確化タクソノミー (Skills / Agents / Instructions / Hooks) | Accepted |
-| [ADR-011](./ADR-011-physical-role-separation.md) | 役割別物理ファイル分離 (Instructions / Hooks の .apm/ 抽出) | Accepted |
+| [ADR-011](./ADR-011-hook-specification-format.md) | Hook Specification Format & Trigger Event Vocabulary | Accepted |
+| [ADR-012](./ADR-012-physical-role-separation.md) | 役割別物理ファイル分離 (Instructions / Hooks の .apm/ 抽出) | Accepted |
