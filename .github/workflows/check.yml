@@ -32,6 +32,21 @@ jobs:
             echo "  $pkg: $count source files"
           done
 
+      - name: Lint Caller Response Contract (ADR-009 rule 1)
+        run: |
+          # Every call-*/SKILL.md must declare a Caller Response Contract section.
+          # Accepts either the English heading or the Japanese heading (呼び出し元の応答コントラクト).
+          fail=0
+          for skill in */.apm/skills/call-*/SKILL.md; do
+            if ! grep -qE '^##+ .*(Caller Response Contract|呼び出し元の応答コントラクト)' "$skill"; then
+              echo "::error file=$skill::missing 'Caller Response Contract' / '呼び出し元の応答コントラクト' heading (ADR-009 rule 1)"
+              fail=1
+            else
+              echo "  ✓ $skill"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
       - name: Install dependencies
         run: apm install --no-policy
 
