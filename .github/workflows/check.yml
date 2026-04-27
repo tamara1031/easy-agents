@@ -329,7 +329,7 @@ jobs:
                   hook_sections.append((current_start, "\n".join(current)))
 
               for start_lineno, section_text in hook_sections:
-                  for base, rel_lineno in extract_events(path, section_text):
+                  for base, rel_lineno in extract_events(section_text, path):
                       abs_lineno = start_lineno + rel_lineno - 1
                       if base not in ALLOWED_EVENTS:
                           print(
