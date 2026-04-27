@@ -23,7 +23,6 @@ APM (Agent Package Manager) における役割:
 
 ```
 <package>/
-├── plugin.json            # Claude プラグインメタデータ
 ├── apm.yml                # APM パッケージ設定
 ├── README.md
 ├── .gitignore             # .claude/ .github/ apm_modules/ を除外
