@@ -35,3 +35,24 @@ easy-agent (統合オーケストレーター)
 | taskforce | 0.1.0 | 階層型タスク実行 |
 | refine-loop | 0.1.0 | 反復改善ループ (Verify フェーズ) |
 | memoir | 0.1.0 | ベクターDB長期記憶 |
+
+## 新規 call-X スキルの追加
+
+新しいサブエージェントスキルを追加する場合は、以下の手順に従う ([ADR-009](./adr/ADR-009-caller-response-contract-convention.md) 規約 1〜4 への準拠が必須):
+
+1. **スキャフォールドをコピー**:
+   ```bash
+   cp docs/templates/call-skill-template.md \
+      <package>/.apm/skills/call-<skill-name>/SKILL.md
+   ```
+2. **テンプレート内の `{placeholder}` と `{# コメント}` を実装内容で置換**。Caller Response Contract セクションは削除しないこと（CI で必須セクションを機械チェック）。
+3. **2層 vs 単一階層の選択**: サブエージェントが複数処理単位（議題・タスク等）を持つ場合は Pattern B（per-unit + orchestrator-aggregate）、そうでない場合は Pattern A（単一階層）を採用。判定基準は ADR-009 規約 2 を参照。
+4. **対応エージェント定義を作成**: `<package>/.apm/agents/<agent-name>.agent.md` を作成し、frontmatter (name / description / model / user-invocable / tools) を設定。
+5. **ナビゲーションドキュメントを更新**:
+   - `docs/skills.md` のスキル一覧に1行追加
+   - `docs/agents.md` のエージェント一覧に1行追加
+   - `docs/dependencies.md` の呼び出し関係に追記（必要に応じて）
+6. **CI 検証**:
+   - `Lint Caller Response Contract` ステップが新スキルを発見し、必須見出しの存在を確認
+   - `apm install` が成功し `.claude/skills/` にビルド成果物が生成される
+7. **必要に応じて ADR を追加**: 新パターンが既存 ADR と矛盾する場合は新規 ADR で記録し、`docs/adr/README.md` の索引にも追加（CI の `Lint ADR index completeness` がカバー）。
