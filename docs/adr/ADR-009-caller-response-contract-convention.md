@@ -96,7 +96,9 @@ ADR-008 で導入されたパターンは強力だが、形式知化されてい
 
 ## 今後の課題
 
-- 規約遵守を CI で機械チェックする仕組み（SKILL.md に必須セクションが存在するかのリンター）
+- ~~規約遵守を CI で機械チェックする仕組み（SKILL.md に必須セクションが存在するかのリンター）~~ → **解決済み (2026-04-27)**: `.github/workflows/check.yml` に `Lint Caller Response Contract (ADR-009 rule 1)` ステップを追加。すべての `*/.apm/skills/call-*/SKILL.md` に「Caller Response Contract」または「呼び出し元の応答コントラクト」見出しが存在することを検証する。あわせて関連する以下の2リンタも追加:
+  - `Lint ADR index completeness`: 全 ADR-XXX.md が `docs/adr/README.md` から参照されていることを検証 (ADR-008 が長期間未登録だった回帰の予防)
+  - `Lint sister schema common base`: parliament/taskforce の `orchestrator_state.json` が共通ベース status enum (TODO/IN_PROGRESS/IN_REVIEW/APPROVED/REJECTED/ERROR) を持つことを検証 (拡張は許容)
 - `easy-agent.agent.md` の Fallback Chain と各 SKILL.md の Caller Response Contract のドリフト検出（テキスト類似度ベースのチェッカ等）
 - 新規 `call-X` スキル追加時のテンプレート / スキャフォールド
 
