@@ -99,7 +99,7 @@ runSubagent(
 {context}
 ```
 
-> **`{context}` の用途と制約**: 主にフェーズ引き継ぎペイロード（smart-agent からの委譲情報）が注入される。上限500トークン。コード全文ではなく関連箇所の抜粋のみを含めること。
+> **`{context}` の用途と制約**: 主にフェーズ引き継ぎペイロード（easy-agent からの委譲情報）が注入される。上限500トークン。コード全文ではなく関連箇所の抜粋のみを含めること。
 
 ## Workflow
 
@@ -117,7 +117,7 @@ runSubagent(
 1. **議題一覧が Phase 1 フォーマット準拠**: `{context}` に議題ID・チェックリスト・ステータスを含む議題一覧が存在する
 2. **ユーザー承認が取得済み**: 上流エージェントがユーザーに提示し、承認を得ている
 
-> **承認の委譲**: smart-agent の確認ゲートでユーザー承認を得た場合、call-parliament の Phase 1 承認は充足される。
+> **承認の委譲**: easy-agent の Confirmation Gate でユーザー承認を得た場合、call-parliament の Phase 1 承認は充足される。
 > **前提条件**: `{context}` の議題一覧は **全件承認済み** であること。
 
 ### Phase 2: 議論の実行
@@ -216,3 +216,31 @@ runSubagent(
 | 明確なベストプラクティスが存在する | 直接実行 |
 | 1つの視点だけで判断可能 | Advisory で確認後に実行 |
 | ユーザーが既に方針を明示している | 方針に従って Hierarchy で実装 |
+
+---
+
+## 呼び出し元の応答コントラクト (Caller Response Contract)
+
+call-parliament を呼び出したエージェント（通常 easy-agent の Deliberate フェーズ）が、各返却ステータスを受け取った際に取るべきアクションを定義する。返却の単位は **議題ごとの `chairperson_output.status`**（schemas/chairperson_output.json）と、**オーケストレーター集約後の最終状態**（Phase 4 の `grand_synthesis` または Phase 3 のフォールバック発動）の2層に分かれる。
+
+### 議題単位 (Per-topic) の返却ステータス
+
+| ステータス | 意味 | 呼び出し元が取るべきアクション |
+| :--- | :--- | :--- |
+| `AGREED` | 全メンバーが APPROVE または軽微な REVISE で議論が完了 | チェックリスト全項目 PASS を確認した上で当該議題を `APPROVED` とし、Phase 4 の集約待ちへ進める |
+| `CONVERGED` | `convergence_threshold` 連続で新規論点なし（議論停滞による収束） | `unresolved_issues` に対立点が明示されていることを確認の上 `APPROVED` 扱い。残存リスクは `residual_risks` として後続フェーズへ引き継ぐ |
+| `MAX_ROUNDS` | `max_rounds` 到達で強制終了（部分合意） | 残存課題を明記した最善合意案を採用して `APPROVED` 扱いとし、**ユーザーに残存課題と選択肢（続行 / 要件緩和 / Advisory 追加収集）を通知する**。自動で次フェーズへ進めない |
+
+> **AGREED と CONVERGED の違い**: `AGREED` はチェックリストを満たした能動的合意。`CONVERGED` は新規論点が枯渇したことによる受動的合意（残存対立を明示した上での「現時点の最善案」）。後者は `unresolved_issues` の有無を必ず確認すること。
+
+### オーケストレーター集約レベルの返却ステータス
+
+| ステータス | 根本原因 | 呼び出し元が取るべきアクション |
+| :--- | :--- | :--- |
+| 全議題 APPROVED | Phase 3 で全議題がチェックリストを充足し、Phase 4 で `grand_synthesis` が生成された | `Plan` フェーズへ進む。合意案（`final_deliverable` または `deliverable_path`）を Hierarchy への入力として渡す |
+| `max_rejections` 超過 | 1つ以上の議題で差し戻し回数が上限を超過（チェックリスト未達のまま） | call-parliament の **フォールバック戦略 (Phase 3)** で提示される選択肢（手動選択 / 要件緩和 / Advisory 追加収集）を **そのままユーザーへ転送** する。ユーザー選択後に再実行、または Phase Gate で STOP |
+| 議題 `ERROR` | `topics[].status = ERROR`（議長サブエージェント自体の失敗、ツール不可、致命的内部エラー） | 残存議題の処理を停止し、`error_reason` をユーザーへ報告。**自律的な再試行は行わない**。Advisory 相談または Phase Gate で STOP を選択 |
+
+> **転送原則 (Relay Principle)**: easy-agent は `max_rejections` 超過時に独自の選択肢を作らず、call-parliament が提示した選択肢をそのままユーザーに渡す。これによりサブエージェントのフォールバック戦略とオーケストレーターの応答が矛盾しない（ADR-008 参照）。
+
+> **MAX_ROUNDS と max_rejections 超過の違い**: 前者は「議論ラウンドの時間切れ（合意の質は問えるが議論は完結）」で部分的に進行可能。後者は「検収サイクルの破綻（チェックリスト自体を満たせない）」でユーザー判断必須。前者は自動で APPROVED 扱いに昇格できるが、後者は決して昇格させない。

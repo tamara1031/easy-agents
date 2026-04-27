@@ -11,6 +11,8 @@
 | call-refine-loop | refine-loop | ❌ | Verify フェーズで成果物の反復改善が必要なとき |
 | empirical-prompt-tuning | (mizchi/skills) | ✅ | プロンプト改善ループを回すとき |
 
+> **Caller Response Contract**: 上記 `call-*` 4スキル全てが「呼び出し元の応答コントラクト (Caller Response Contract)」セクションを持ち、サブエージェント出力と呼び出し元アクションの双方向コントラクトを定義する。規約は [ADR-009](./adr/ADR-009-caller-response-contract-convention.md) を参照。
+
 ---
 
 ## long-term-memory

@@ -165,6 +165,27 @@ runSubagent(
 
 ---
 
+## 呼び出し元の応答コントラクト (Caller Response Contract)
+
+call-advisor を呼び出したエージェント（通常 easy-agent の Phase Gate / On-demand Advisory）が、`<verdict>` タグの値に応じて取るべきアクションを定義する。advisor はツールを持たない analytical agent であり、返却単位は単一階層（個別の verdict のみ、orchestrator-aggregate は存在しない）。
+
+| Verdict | 意味 | 呼び出し元が取るべきアクション |
+| :--- | :--- | :--- |
+| `PROCEED` | 現在のアプローチを承認。リスクは許容範囲内 | 現フェーズを完了して次フェーズへ進行。`recommended_approach` を Plan に反映可能なら反映、不要なら無視 |
+| `CORRECT` | 修正必要。`recommended_approach` の指摘を反映してから続行 | 同一フェーズに戻り、`recommended_approach` で示された方針に従って修正・再実行する。修正後に再相談は不要（`max_consults` 節約） |
+| `ESCALATE` | advisor 単独では解決不能。`escalation_target` で示されるサブエージェントへ委譲 | `escalation_target` の値に応じて `call-hierarchy` または `call-parliament` を起動する。引き継ぎペイロード（次節「ESCALATE 判定後のフロー」参照）を構築して委譲する |
+| `STOP` | 続行不可。ユーザー判断が必要 | 処理を停止し、`analysis` / `risks` をユーザーへ報告する。**自動継続せずユーザー指示を仰ぐ**。Confirmation Gate 相当の対応 |
+
+> **CORRECT と ESCALATE の違い**: `CORRECT` は「現在のエージェントが修正可能な範囲」（実装ミス、計画調整）。`ESCALATE` は「現在のエージェントの能力範囲を超える」（複数モジュール跨ぎ、設計判断）。エグゼキューターが自身で適用可能なら `CORRECT`、組織化された下位スキルが必要なら `ESCALATE`。
+
+> **PROCEED と STOP の違い**: `PROCEED` は「リスクを認識した上で続行可能」、`STOP` は「リスクが許容できずユーザー判断が必要」。両者の境界は不可逆性・コスト・ステークホルダー影響の3観点で判断する。
+
+> **Format フォールバック**: `<verdict>` が抽出できない場合は `PROCEED` と解釈する（次節「フォーマット判定」参照）。これは「相談自体が成功した = リスク無し」と保守的に扱う設計。
+
+> **Source of Truth**: 呼び出し元の高位エージェント（easy-agent 等）は本表を Source of Truth として参照する。easy-agent.agent.md にも同等のルーティング表が存在するが、`<verdict>` ごとの詳細な意味と境界条件は本表が正となる。
+
+---
+
 ## ESCALATE 判定後のフロー
 
 ESCALATE verdict 発動後：

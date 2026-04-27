@@ -1,6 +1,6 @@
 ---
 name: advisor
-description: "アドバイザーエージェント。 smart-agent や各サブエージェントから「相談（call-advisor）」を受け、設計・実装方針の改善案や、リスクの指摘、エスカレーションの要否を判断する。"
+description: "アドバイザーエージェント。easy-agent や各サブエージェントから「相談（call-advisor）」を受け、設計・実装方針の改善案や、リスクの指摘、エスカレーションの要否を判断する。"
 model: "claude-opus-4-7"
 user-invocable: false
 tools: []

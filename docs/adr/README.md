@@ -13,3 +13,5 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-005](./ADR-005-apm-packaging.md) | APM によるパッケージ管理 | Accepted |
 | [ADR-006](./ADR-006-phase-gate-protocol.md) | Phase Gate Protocol | Accepted |
 | [ADR-007](./ADR-007-refine-loop-pattern.md) | refine-loop パッケージ分離 (バイアスフリー反復改善) | Accepted |
+| [ADR-008](./ADR-008-subagent-return-protocol.md) | サブエージェント返却プロトコルの形式化 (Caller Response Contract) | Accepted |
+| [ADR-009](./ADR-009-caller-response-contract-convention.md) | Caller Response Contract Convention (Relay Principle / Two-layer / SSoT) | Accepted |

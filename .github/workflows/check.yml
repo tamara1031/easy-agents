@@ -32,6 +32,86 @@ jobs:
             echo "  $pkg: $count source files"
           done
 
+      - name: Lint Caller Response Contract (ADR-009 rule 1)
+        run: |
+          # Every call-*/SKILL.md must declare a Caller Response Contract section.
+          # Accepts either the English heading or the Japanese heading (呼び出し元の応答コントラクト).
+          fail=0
+          for skill in */.apm/skills/call-*/SKILL.md; do
+            if ! grep -qE '^##+ .*(Caller Response Contract|呼び出し元の応答コントラクト)' "$skill"; then
+              echo "::error file=$skill::missing 'Caller Response Contract' / '呼び出し元の応答コントラクト' heading (ADR-009 rule 1)"
+              fail=1
+            else
+              echo "  ✓ $skill"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - name: Lint ADR index completeness
+        run: |
+          # Every docs/adr/ADR-XXX-*.md file must be referenced from
+          # docs/adr/README.md. Catches the regression where a new ADR is
+          # created but never linked from the index (e.g. ADR-008).
+          fail=0
+          for adr in docs/adr/ADR-*.md; do
+            name=$(basename "$adr")
+            if ! grep -qF "$name" docs/adr/README.md; then
+              echo "::error file=docs/adr/README.md::$name is not referenced in the ADR index"
+              fail=1
+            else
+              echo "  ✓ $name"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - name: Lint stale 'smart-agent' references
+        run: |
+          # The orchestrator was renamed smart-agent → easy-agent. Fail
+          # if any package source or doc under tracked content contains
+          # the old name. Scans only authored source dirs (skips .github
+          # to avoid matching this lint's own text, vendored apm_modules,
+          # and docker compose files in memoir).
+          targets=(easy-agent advisor parliament taskforce refine-loop memoir docs CLAUDE.md)
+          if grep -rnE 'smart-agent|スマートエージェント' \
+               --include='*.md' --include='*.json' --include='*.yml' --include='*.yaml' \
+               --exclude-dir='apm_modules' --exclude-dir='docker' \
+               "${targets[@]}" ; then
+            echo "::error::stale 'smart-agent' / 'スマートエージェント' reference detected — rename to 'easy-agent'"
+            exit 1
+          fi
+          echo "  ✓ no stale 'smart-agent' references"
+
+      - name: Lint sister schema common base
+        run: |
+          # parliament and taskforce orchestrator_state.json declare each
+          # other as 姉妹スキーマ ('sister schemas') and share a common
+          # base of task/topic statuses. Extensions (e.g. taskforce-only
+          # SKIPPED) are allowed, but the common base must be present in
+          # both. This catches silent drift where one side adds a status
+          # the other forgets to mirror.
+          python3 - <<'PY'
+          import json, sys
+          BASE = {"TODO", "IN_PROGRESS", "IN_REVIEW", "APPROVED", "REJECTED", "ERROR"}
+          SISTERS = [
+              ("parliament/.apm/skills/call-parliament/schemas/orchestrator_state.json", "topics"),
+              ("taskforce/.apm/skills/call-hierarchy/schemas/orchestrator_state.json",   "tasks"),
+          ]
+          fail = False
+          for path, key in SISTERS:
+              with open(path) as f:
+                  schema = json.load(f)
+              enum = set(schema["properties"][key]["items"]["properties"]["status"]["enum"])
+              missing = BASE - enum
+              if missing:
+                  print(f"::error file={path}::{key}[].status enum missing common base {sorted(missing)}")
+                  fail = True
+              else:
+                  extras = sorted(enum - BASE)
+                  extra_note = f" (extras: {extras})" if extras else ""
+                  print(f"  ✓ {path}: {key}[].status base OK{extra_note}")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 
