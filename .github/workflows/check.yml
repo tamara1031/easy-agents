@@ -172,6 +172,40 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint role tag completeness (ADR-010 / ADR-011)
+        run: |
+          # Every H2 heading (## ...) outside code fences in every
+          # */.apm/agents/*.agent.md must carry at least one [role: ...] tag.
+          # This enforces that all sections are classified under ADR-010's
+          # taxonomy — the companion lint "Lint role taxonomy tag values"
+          # handles the closed-set check; this step catches sections that
+          # were added without a tag at all.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          H2_RE = re.compile(r"^## ")
+          fail = False
+          for path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              in_fence = False
+              with open(path) as f:
+                  for lineno, line in enumerate(f, 1):
+                      stripped = line.lstrip()
+                      if stripped.startswith("```"):
+                          in_fence = not in_fence
+                          continue
+                      if in_fence or not H2_RE.match(line):
+                          continue
+                      if "`[role:" not in line:
+                          print(
+                              f"::error file={path},line={lineno}::"
+                              f"H2 heading has no [role: ...] tag — every H2 "
+                              f"must be annotated (ADR-010)"
+                          )
+                          fail = True
+                      else:
+                          print(f"  ✓ {path}:{lineno} tagged")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Lint role canonical sources (ADR-012)
         run: |
           # Every *.agent.md that contains [role: instruction] sections must have
