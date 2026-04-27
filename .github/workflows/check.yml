@@ -32,6 +32,25 @@ jobs:
             echo "  $pkg: $count source files"
           done
 
+      - name: Lint CLAUDE.md package inventory
+        run: |
+          # CLAUDE.md is the project's onboarding document and must list
+          # every authored APM package (top-level dir with apm.yml). This
+          # catches the regression where a new package is added but the
+          # onboarding doc still claims the old roster (e.g. ADR-007 added
+          # refine-loop without updating CLAUDE.md's package list).
+          fail=0
+          for pkg_yml in */apm.yml; do
+            pkg=$(dirname "$pkg_yml")
+            if ! grep -qF "\`$pkg\`" CLAUDE.md; then
+              echo "::error file=CLAUDE.md::package '$pkg' is not referenced (expected backtick-quoted name)"
+              fail=1
+            else
+              echo "  ✓ $pkg"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
       - name: Lint Caller Response Contract (ADR-009 rule 1)
         run: |
           # Every call-*/SKILL.md must declare a Caller Response Contract section.
