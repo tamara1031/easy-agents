@@ -12,6 +12,8 @@
 | hierarchy-member | taskforce | ❌ | Sonnet | read, edit, search, execute, agent |
 | refine-loop | refine-loop | ❌ | Sonnet | read, edit, search, execute, agent |
 
+> **返却ステータスの解釈**: 以下の表は各エージェントの返却概要のみを示す。各ステータスに対する呼び出し元の詳細な対応（Caller Response Contract）は、対応する `call-X/SKILL.md` を参照すること。easy-agent.agent.md の Fallback Chain と SKILL.md の記述がドリフトした場合は **SKILL.md を Source of Truth とする**（[ADR-009](./adr/ADR-009-caller-response-contract-convention.md) 規約 4）。
+
 ---
 
 ## easy-agent
