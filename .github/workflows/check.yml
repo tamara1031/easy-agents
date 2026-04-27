@@ -131,6 +131,47 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint role taxonomy tag values (ADR-010 / ADR-011)
+        run: |
+          # Every ``[role: <value>]`` tag applied to a heading in
+          # *.apm/agents/*.agent.md must use a value from the ADR-010
+          # closed set (agent identity | agent capability | instruction
+          # | hook). Catches typos and ad-hoc role names that drift away
+          # from the taxonomy. Only headings are checked — prose
+          # mentions like "tagged with [role: ...] for one of these
+          # values" are intentionally ignored. Code fences are also
+          # skipped so example tables in docs/templates do not produce
+          # false positives.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          ALLOWED = {"agent identity", "agent capability", "instruction", "hook"}
+          HEADING_RE = re.compile(r"^#{1,6}\s")
+          ROLE_TAG_RE = re.compile(r"`\[role:\s*([^`\]]+?)\s*\]`")
+          fail = False
+          for path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              in_fence = False
+              with open(path) as f:
+                  for lineno, line in enumerate(f, 1):
+                      stripped = line.lstrip()
+                      if stripped.startswith("```"):
+                          in_fence = not in_fence
+                          continue
+                      if in_fence or not HEADING_RE.match(line):
+                          continue
+                      for match in ROLE_TAG_RE.finditer(line):
+                          value = match.group(1).strip()
+                          if value not in ALLOWED:
+                              print(
+                                  f"::error file={path},line={lineno}::"
+                                  f"unknown [role: {value}] — must be one of "
+                                  f"{sorted(ALLOWED)} (ADR-010)"
+                              )
+                              fail = True
+                          else:
+                              print(f"  ✓ {path}:{lineno} [role: {value}]")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 
