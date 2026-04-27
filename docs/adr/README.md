@@ -15,3 +15,4 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-007](./ADR-007-refine-loop-pattern.md) | refine-loop パッケージ分離 (バイアスフリー反復改善) | Accepted |
 | [ADR-008](./ADR-008-subagent-return-protocol.md) | サブエージェント返却プロトコルの形式化 (Caller Response Contract) | Accepted |
 | [ADR-009](./ADR-009-caller-response-contract-convention.md) | Caller Response Contract Convention (Relay Principle / Two-layer / SSoT) | Accepted |
+| [ADR-010](./ADR-010-role-taxonomy.md) | 役割明確化タクソノミー (Skills / Agents / Instructions / Hooks) | Accepted |

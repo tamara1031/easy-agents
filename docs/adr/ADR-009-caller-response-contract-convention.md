@@ -100,7 +100,7 @@ ADR-008 で導入されたパターンは強力だが、形式知化されてい
   - `Lint ADR index completeness`: 全 ADR-XXX.md が `docs/adr/README.md` から参照されていることを検証 (ADR-008 が長期間未登録だった回帰の予防)
   - `Lint sister schema common base`: parliament/taskforce の `orchestrator_state.json` が共通ベース status enum (TODO/IN_PROGRESS/IN_REVIEW/APPROVED/REJECTED/ERROR) を持つことを検証 (拡張は許容)
 - `easy-agent.agent.md` の Fallback Chain と各 SKILL.md の Caller Response Contract のドリフト検出（テキスト類似度ベースのチェッカ等）
-- 新規 `call-X` スキル追加時のテンプレート / スキャフォールド
+- ~~新規 `call-X` スキル追加時のテンプレート / スキャフォールド~~ → **解決済み (2026-04-27)**: `docs/templates/call-skill-template.md` にスキャフォールドを配置し、`docs/README.md` に「新規 call-X スキルの追加」セクションを追加して7ステップのチェックリストを整備。テンプレートは ADR-009 規約 1〜4 すべてに準拠した状態を初期値で持ち、CI の `Lint Caller Response Contract` がコピー直後から通過する。Pattern A (単一階層: advisor / refine-loop 同型) と Pattern B (2層: parliament / hierarchy 同型) の両方を含み、コントリビューターが規約 2 に従って選択できる。
 
 ## 関連決定
 
