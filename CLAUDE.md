@@ -2,7 +2,7 @@
 
 ## プロジェクト概要
 
-このリポジトリは Claude Code 向けのマルチエージェントフレームワーク群を APM パッケージとして管理する。パッケージは `easy-agent`, `advisor`, `parliament`, `taskforce`, `memoir` の5つ。
+このリポジトリは Claude Code 向けのマルチエージェントフレームワーク群を APM パッケージとして管理する。パッケージは `easy-agent`, `advisor`, `parliament`, `taskforce`, `refine-loop`, `memoir` の6つ。
 
 ## APM パッケージの仕組み
 
@@ -110,6 +110,7 @@ easy-agent
 ├── advisor      (Opus アドバイザー)
 ├── parliament   (議会モデル)
 ├── taskforce    (階層型タスク実行)
+├── refine-loop  (反復改善ループ / Verify フェーズ)
 └── memoir       (ベクター長期記憶)
 ```
 
