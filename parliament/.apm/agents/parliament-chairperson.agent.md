@@ -1,6 +1,6 @@
 ---
 name: parliament-chairperson
-description: "議会議長エージェント（スマートエージェントの分身）。複雑な設計判断が必要な際、複数の議員（Parliament Members）による合意形成（会議）を主催し、最終的な方針（Consensus）をまとめる。"
+description: "議会議長エージェント。easy-agent などのオーケストレーターから call-parliament 経由で起動され、複雑な設計判断が必要な際に複数の議員（Parliament Members）による合意形成（会議）を主催し、最終的な方針（Consensus）をまとめる。"
 model: "claude-sonnet-4-6"
 user-invocable: false
 tools: [read, search, agent]
