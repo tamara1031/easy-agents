@@ -8,13 +8,17 @@ tools: [read, edit, search, execute, agent, todo]
 
 # easy-agent - ユニバーサルエントリーポイント
 
-> **Role Taxonomy** ([ADR-010](../../../docs/adr/ADR-010-role-taxonomy.md)): 本ファイルの各 H2 セクションは `[role: agent identity | agent capability | instruction | hook]` のいずれかでタグ付けされている。
-> - `agent identity` — 主体としての easy-agent の自己定義
-> - `agent capability` — easy-agent の意思決定ロジック・dispatch 戦略
-> - `instruction` — 普遍ルール（将来的に CLAUDE.md または `.apm/instructions/` への抽出候補）
-> - `hook` — 特定イベントで自動発火する定型処理（将来的に `.apm/hooks/` への抽出候補）
+> **Role Taxonomy** ([ADR-010](../../../docs/adr/ADR-010-role-taxonomy.md)) — **Assembled View** ([ADR-012](../../../docs/adr/ADR-012-physical-role-separation.md)):
+> 本ファイルは以下のセクション種別を含む Assembled View です。APM がインライン展開をサポートするまでの移行期間中、`[role: instruction]` と `[role: hook]` セクションには Canonical Source が存在します。
 >
-> 物理的な抽出は本タクソノミーが定着した後の独立 ADR で扱う。本ファイルでは現時点では「混在状態の可視化」のみを行う。
+> | 役割 | Canonical Source | 本ファイルの扱い |
+> | :--- | :--- | :--- |
+> | `agent identity` | 本ファイルが唯一のソース | 正規 |
+> | `agent capability` | 本ファイルが唯一のソース | 正規 |
+> | `instruction` | [`easy-agent/.apm/instructions/execution-policy.md`](../instructions/execution-policy.md) | Assembled View |
+> | `hook` | [`easy-agent/.apm/hooks/session-start.md`](../hooks/session-start.md) | Assembled View |
+>
+> **編集ルール**: `[role: instruction]` / `[role: hook]` セクションは Canonical Source を正として編集し、本ファイルへ反映すること。本ファイルを直接編集しても Canonical Source と乖離した場合は CI が検出する。
 
 ## Overview (概要) `[role: agent identity]`
 

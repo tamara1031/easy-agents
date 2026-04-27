@@ -172,6 +172,74 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint role canonical sources (ADR-012)
+        run: |
+          # Every *.agent.md that contains [role: instruction] sections must have
+          # at least one .md file in <package>/.apm/instructions/.
+          # Every *.agent.md that contains [role: hook] sections must have
+          # at least one .md file in <package>/.apm/hooks/.
+          # This enforces the Assembled View / Canonical Source split from ADR-012.
+          fail=0
+          for agent in */.apm/agents/*.agent.md; do
+            pkg=$(echo "$agent" | cut -d/ -f1)
+            if grep -qF '[role: instruction]' "$agent"; then
+              count=$(find "$pkg/.apm/instructions" -name '*.md' 2>/dev/null | wc -l)
+              if [ "$count" -eq 0 ]; then
+                echo "::error file=$agent::has [role: instruction] sections but $pkg/.apm/instructions/ has no .md files (ADR-012)"
+                fail=1
+              else
+                echo "  ✓ $pkg: instructions/ canonical source present ($count file(s))"
+              fi
+            fi
+            if grep -qF '[role: hook]' "$agent"; then
+              count=$(find "$pkg/.apm/hooks" -name '*.md' 2>/dev/null | wc -l)
+              if [ "$count" -eq 0 ]; then
+                echo "::error file=$agent::has [role: hook] sections but $pkg/.apm/hooks/ has no .md files (ADR-012)"
+                fail=1
+              else
+                echo "  ✓ $pkg: hooks/ canonical source present ($count file(s))"
+              fi
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - name: Lint Fallback Chain vs Caller Response Contract (ADR-009 drift detection)
+        run: |
+          # Verifies that every subagent status token cited in easy-agent's Fallback Chain
+          # actually appears in the corresponding call-X/SKILL.md Caller Response Contract.
+          # This detects vocabulary drift where easy-agent references a status that the
+          # skill no longer defines (or vice-versa after a rename).
+          python3 - <<'PY'
+          import re, sys
+          skill_files = {
+              "refine-loop": "refine-loop/.apm/skills/call-refine-loop/SKILL.md",
+              "parliament":  "parliament/.apm/skills/call-parliament/SKILL.md",
+              "hierarchy":   "taskforce/.apm/skills/call-hierarchy/SKILL.md",
+          }
+          attributed = {
+              "refine-loop": {"ESCALATE", "MAX_ITER", "ABORT"},
+              "parliament":  {"MAX_ROUNDS", "max_rejections"},
+              "hierarchy":   {"max_rejections"},
+          }
+          fail = False
+          for skill, tokens in attributed.items():
+              path = skill_files[skill]
+              try:
+                  content = open(path).read()
+              except FileNotFoundError:
+                  print(f"::error file={path}::file not found")
+                  fail = True
+                  continue
+              for token in sorted(tokens):
+                  if token not in content:
+                      print(f"::error file={path}::status token '{token}' is cited in easy-agent Fallback Chain "
+                            f"but not found in {path} (ADR-009 drift)")
+                      fail = True
+                  else:
+                      print(f"  ✓ {skill}: '{token}' present in Caller Response Contract")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 
