@@ -117,6 +117,15 @@
 | Phase 3 | チェックリスト検証 (APPROVED/REJECTED) |
 | Phase 4 | 全トピック集約・最終合成 |
 
+**返却ステータスと呼び出し元アクション (Caller Response Contract)**:
+
+| ステータス | 条件 | 呼び出し元アクション |
+|---|---|---|
+| `AGREED` | 全メンバーが APPROVE / 軽微 REVISE のみ | 合意案を採用して次フェーズへ進む |
+| `CONVERGED` | convergence_threshold 連続で新規論点なし | 合意案（残存課題つき）を採用して次フェーズへ進む |
+| `MAX_ROUNDS` | max_rounds 到達・部分合意 | 最善合意案を採用しつつ、残存課題と選択肢をユーザーへ通知 |
+| `max_rejections 超過` | 検収差し戻しが上限超過 | parliament の選択肢をユーザーへ転送（relay）。自動進行しない |
+
 **JSON スキーマ**:
 - `member_message.json`: 議員発言 (agent_role, stance, target_agent, statement, condition_for_approval)
 - `chairperson_output.json`: 議長出力 (action, topic_id, 状態ごとの条件フィールド)
@@ -147,6 +156,13 @@
 | Phase 2 | 依存解決 (トポロジカルソート) → ローリング並列実行 |
 | Phase 3 | ゲートキーパーレビュー (APPROVE/REVISE) |
 | Phase 4 | 最終ゲート実行・成果物集約 |
+
+**返却ステータスと呼び出し元アクション (Caller Response Contract)**:
+
+| ステータス | 条件 | 呼び出し元アクション |
+|---|---|---|
+| `全タスク APPROVED` | 全チェックリスト項目が APPROVED | 次フェーズ（Verify 等）へ進む |
+| `max_rejections 超過` | 検収差し戻しが上限超過 | hierarchy の選択肢をユーザーへ転送（relay）。自動進行しない |
 
 **タスク分解原則**:
 - ✅ 凝集したコンテキスト単位 (「認証モジュール実装」)
