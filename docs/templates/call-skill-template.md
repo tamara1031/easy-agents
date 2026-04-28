@@ -105,6 +105,7 @@ call-{skill-name} を呼び出したエージェント（通常 easy-agent の {
 | `{STATUS_PARTIAL}` | {部分的成功・時間切れ等} | {ユーザーに残存課題を提示し選択を仰ぐ等} |
 | `{STATUS_ESCALATE}` | {根本問題・委譲必要} | {上位フェーズに差し戻す / Advisory 相談へ等} |
 | `{STATUS_ABORT}` | {実行不能} | {STOP / 環境チェック後再試行等} |
+| `DISPATCH_FAILURE` | サブエージェントの起動失敗・タイムアウト・ツール不可（[ADR-015](../adr/ADR-015-dispatch-failure-protocol.md)） | {スキルの分類に応じてフォールバック戦略を選択: Degrade-and-Continue (advisor型) / Skip-and-Report (parliament・hierarchy型) / Fallback-Mode (refine-loop型)} |
 
 {# パターン B: 2層構造 (parliament / hierarchy と同型 — サブエージェントが議題/タスク等の複数処理単位を持つ場合)
    上記の単一階層表を削除し、以下の2表を採用する。}
@@ -121,6 +122,7 @@ call-{skill-name} を呼び出したエージェント（通常 easy-agent の {
 | :--- | :--- | :--- |
 | 全単位 APPROVED | {全成功} | {次フェーズへ進む} |
 | `max_rejections` 超過 | {差し戻し上限超過} | {サブエージェントが提示した選択肢をそのままユーザーへ転送する (Relay Principle)} |
+| `DISPATCH_FAILURE` | サブエージェントの起動失敗・タイムアウト・ツール不可（[ADR-015](../adr/ADR-015-dispatch-failure-protocol.md)） | **Skip-and-Report**: 失敗した処理単位を ERROR 扱いでスキップし、残存単位を継続する。全単位失敗時は Phase Gate で STOP |
 
 > **{紛らわしいステータス対}の違い**: {境界条件を1-2文で明記}
 
