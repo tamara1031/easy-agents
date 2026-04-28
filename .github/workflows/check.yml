@@ -131,6 +131,103 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint subagent output schema status enum consistency (ADR-008/009)
+        run: |
+          # Verifies that the JSON schema status enums for subagent return values
+          # are consistent with the per-unit statuses documented in the corresponding
+          # call-*/SKILL.md Caller Response Contract sections. This is a bidirectional
+          # check: the schema must contain exactly the expected status values, and
+          # each of those values must appear in the SKILL.md contract.
+          #
+          # Covers:
+          #   parliament/chairperson_output.json  <->  call-parliament/SKILL.md
+          #   taskforce/manager_output.json       <->  call-hierarchy/SKILL.md
+          #
+          # If a developer adds a new status to a schema without updating:
+          #   a) the expected_statuses set here (single source of truth in CI), or
+          #   b) the SKILL.md Caller Response Contract,
+          # this lint will fail and surface the drift.
+          python3 - <<'PY'
+          import json, sys
+
+          CHECKS = [
+              {
+                  "schema":   "parliament/.apm/skills/call-parliament/schemas/chairperson_output.json",
+                  "skill":    "parliament/.apm/skills/call-parliament/SKILL.md",
+                  "pointer":  ["properties", "status", "enum"],
+                  "expected": {"AGREED", "CONVERGED", "MAX_ROUNDS"},
+                  "label":    "parliament chairperson_output.status",
+              },
+              {
+                  "schema":   "taskforce/.apm/skills/call-hierarchy/schemas/manager_output.json",
+                  "skill":    "taskforce/.apm/skills/call-hierarchy/SKILL.md",
+                  "pointer":  ["properties", "status", "enum"],
+                  "expected": {"IN_REVIEW", "ERROR"},
+                  "label":    "hierarchy manager_output.status",
+              },
+          ]
+
+          def resolve_pointer(obj, keys):
+              for k in keys:
+                  if isinstance(obj, dict):
+                      obj = obj.get(k, None)
+                  else:
+                      return None
+              return obj
+
+          fail = False
+          for chk in CHECKS:
+              schema_path, skill_path = chk["schema"], chk["skill"]
+              try:
+                  schema = json.load(open(schema_path))
+              except FileNotFoundError:
+                  print(f"::error file={schema_path}::schema file not found")
+                  fail = True
+                  continue
+              try:
+                  skill_text = open(skill_path).read()
+              except FileNotFoundError:
+                  print(f"::error file={skill_path}::SKILL.md not found")
+                  fail = True
+                  continue
+
+              enum_list = resolve_pointer(schema, chk["pointer"])
+              if not isinstance(enum_list, list):
+                  print(f"::error file={schema_path}::cannot resolve {'.'.join(chk['pointer'])} — not a list")
+                  fail = True
+                  continue
+
+              schema_statuses = set(enum_list)
+              expected = chk["expected"]
+
+              # Check A: schema enum must match expected set exactly (no additions, no deletions)
+              missing_from_schema = expected - schema_statuses
+              extra_in_schema = schema_statuses - expected
+              if missing_from_schema:
+                  print(f"::error file={schema_path}::{chk['label']}: schema enum missing "
+                        f"{sorted(missing_from_schema)} — update schema or remove from CI expected set")
+                  fail = True
+              if extra_in_schema:
+                  print(f"::error file={schema_path}::{chk['label']}: schema enum contains "
+                        f"unexpected {sorted(extra_in_schema)} — add to CI expected set and document "
+                        f"in {skill_path} Caller Response Contract")
+                  fail = True
+
+              # Check B: each schema status must be documented in SKILL.md
+              for status in sorted(schema_statuses):
+                  if status not in skill_text:
+                      print(f"::error file={skill_path}::schema status '{status}' (from {schema_path}) "
+                            f"not found in Caller Response Contract — document it (ADR-009)")
+                      fail = True
+                  else:
+                      print(f"  ✓ {chk['label']}: '{status}' present in schema and SKILL.md")
+
+              if not fail:
+                  print(f"  ✓ {chk['label']}: schema enum {sorted(schema_statuses)} consistent with expected set")
+
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Lint role taxonomy tag values (ADR-010 / ADR-011)
         run: |
           # Every ``[role: <value>]`` tag applied to a heading in
