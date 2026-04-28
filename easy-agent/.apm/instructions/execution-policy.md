@@ -105,6 +105,33 @@
 2. **サブエージェント委譲時**: 委譲に必要な「コンテキスト」のみを抽出して渡す。全履歴は渡さない。
 3. **5回以上の往復**: ループ回数が 5回を超えた場合、中間要約を作成してコンテキストを圧縮する。
 
+### Parliament → Hierarchy 連鎖予算 (ADR-014)
+
+`designExecute` で Parliament → Hierarchy をチェーンする場合、以下の連鎖予算テーブルを守ること。
+
+| 連鎖フェーズ | 予算区分 | 入力上限 | 出力上限 |
+| :--- | :--- | :--- | :--- |
+| easy-agent → call-parliament | Deliberate 委譲 | 1,000トークン | 600トークン × N議題 |
+| Parliament → easy-agent (Handoff Compression) | クロススキル引き継ぎ圧縮 | 600 × N議題 | **500トークン** (決定事項のみ) |
+| easy-agent → call-hierarchy | Implement 委譲 | 1,000トークン (context: 500, checklist: 300, task: 200) | 500トークン |
+| **連鎖合計 (N=2議題)** | designExecute 最悪ケース | **3,200トークン** | **1,600トークン** |
+
+#### Handoff Compression ルール
+
+Parliament → Hierarchy 引き継ぎ時に以下の手順で圧縮する。
+
+1. `chairperson_output.json` の各議題から **decision（決定事項）** と **residual_risks（残存リスク）** のみを抽出する。
+2. 箇条書き形式に変換し、**500トークン以内**に収める。
+3. 圧縮した要約のみを Hierarchy の `context` 引数として渡す（メンバーの発言・内部議論は含めない）。
+
+#### N議題スケーリング
+
+| N議題 | Handoff 圧縮後目標 | 対応方針 |
+| :--- | :--- | :--- |
+| 1〜2 | ≤ 500トークン | 通常の Handoff Compression で対応可能 |
+| 3 | ≤ 500トークン | 決定事項のみ 60〜100トークン/議題に絞り込む |
+| 4以上 | ≤ 500トークン (125/議題以下) | **Advisory 相談推奨**。分割実行または `summary_only` モードを検討 |
+
 ---
 
 ## Constraints (制約)

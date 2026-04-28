@@ -407,6 +407,83 @@ jobs:
           done
           [ "$fail" -eq 0 ]
 
+      - name: Lint cross-skill chain budget table (ADR-014)
+        run: |
+          # ADR-014 requires that easy-agent.agent.md's Context Window Management
+          # section contains a Parliament→Hierarchy chain budget subsection.
+          # The subsection heading must mention 'call-parliament' AND 'call-hierarchy'
+          # (either via a table row or a dedicated heading), OR carry a heading
+          # that includes '連鎖' / 'chain' / 'Handoff' at H3 or deeper within the
+          # CWM section.  This catches the regression where the chain budget table
+          # is removed or the CWM section is rewritten without the cross-skill rule.
+          python3 - <<'PY'
+          import re, sys, pathlib
+
+          TARGET = pathlib.Path("easy-agent/.apm/agents/easy-agent.agent.md")
+          if not TARGET.exists():
+              print(f"::error file={TARGET}::file not found")
+              sys.exit(1)
+
+          text = TARGET.read_text()
+          lines = text.splitlines()
+
+          # Locate the CWM H2 section boundaries
+          CWM_H2_RE = re.compile(
+              r"^## .*(Context.*Management|Context.*Budget|コンテキスト管理|コンテキスト予算)",
+              re.IGNORECASE,
+          )
+          NEXT_H2_RE = re.compile(r"^## ")
+          CHAIN_HEADING_RE = re.compile(
+              r"^###+ .*(連鎖|chain|Handoff)", re.IGNORECASE
+          )
+          PARLIAMENT_RE = re.compile(r"call-parliament|Parliament", re.IGNORECASE)
+          HIERARCHY_RE = re.compile(r"call-hierarchy|Hierarchy", re.IGNORECASE)
+
+          cwm_start = None
+          cwm_end = None
+          for i, line in enumerate(lines):
+              if CWM_H2_RE.match(line):
+                  cwm_start = i
+              elif cwm_start is not None and NEXT_H2_RE.match(line):
+                  cwm_end = i
+                  break
+
+          if cwm_start is None:
+              print(f"::error file={TARGET}::Context Window Management section not found (ADR-014)")
+              sys.exit(1)
+
+          cwm_lines = lines[cwm_start : cwm_end] if cwm_end else lines[cwm_start:]
+          cwm_text = "\n".join(cwm_lines)
+
+          # Check 1: a H3+ heading containing '連鎖' / 'chain' / 'Handoff'
+          has_chain_heading = any(CHAIN_HEADING_RE.match(l) for l in cwm_lines)
+          # Check 2: both 'parliament' and 'hierarchy' appear in the CWM section
+          has_parliament = bool(PARLIAMENT_RE.search(cwm_text))
+          has_hierarchy  = bool(HIERARCHY_RE.search(cwm_text))
+
+          if has_chain_heading and has_parliament and has_hierarchy:
+              print(f"  ✓ {TARGET}: chain budget table present (ADR-014)")
+              sys.exit(0)
+
+          if not has_chain_heading:
+              print(
+                  f"::error file={TARGET}::Context Window Management section has no "
+                  f"'連鎖' / 'chain' / 'Handoff' H3+ subsection — add a chain budget "
+                  f"table per ADR-014"
+              )
+          if not has_parliament:
+              print(
+                  f"::error file={TARGET}::chain budget table in CWM does not mention "
+                  f"'call-parliament' / 'Parliament' (ADR-014)"
+              )
+          if not has_hierarchy:
+              print(
+                  f"::error file={TARGET}::chain budget table in CWM does not mention "
+                  f"'call-hierarchy' / 'Hierarchy' (ADR-014)"
+              )
+          sys.exit(1)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 
