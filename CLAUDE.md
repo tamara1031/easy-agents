@@ -115,6 +115,24 @@ easy-agent
 
 ルートの `apm.yml` は `easy-agent` のみを直接依存として宣言し、残りは推移的依存として解決される。
 
+## バージョン管理とリリース
+
+trunk ベース。ルート `apm.yml` と全サブパッケージの `<package>/apm.yml` は同一の `version:` を共有し、同時にバンプする。
+
+リリース手順:
+
+1. GitHub の **Actions → "Release - Prepare"** で `Run workflow` を押す（main 上で実行）。
+2. `bump` (`patch` / `minor` / `major`) または `version` (例 `1.2.3`) を指定。
+3. ワークフローが以下を自動実行:
+   - 全 `apm.yml` の `version:` を新バージョンに書き換え
+   - `chore(release): vX.Y.Z` として main にコミット
+   - `vX.Y.Z` タグを作成して push
+4. タグ push をトリガに `Release` ワークフローが起動し、`apm pack` で plugin / apm バンドルをビルドして GitHub Release に添付する。
+
+手動でリリースを切る場合は `git tag vX.Y.Z && git push origin vX.Y.Z` でも `Release` ワークフローは走るが、`apm.yml` の `version:` 更新は自分で行う必要がある。通常は `Release - Prepare` を使うこと。
+
+> **注**: main がブランチ保護されている場合、`github-actions[bot]` の直接 push を許可するか、PAT を使うよう `release-prepare.yml` を調整する必要がある。
+
 ## コードスタイル
 
 - エージェント定義 (`*.agent.md`): YAML frontmatter + Markdown
