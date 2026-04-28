@@ -1,5 +1,5 @@
 name: taskforce
-version: 0.1.3
+version: 0.1.4
 description: 大規模タスクを Plan→Implement→Review サイクルで自律完遂する階層型エージェントパッケージ。Orchestrator が Manager を並列ディスパッチし Generator-Verifier パターンで品質ゲートを通過する
 author: tamara1031
 license: MIT
