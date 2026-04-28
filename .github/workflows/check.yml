@@ -389,6 +389,24 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint Context Window Management declaration (ADR-013)
+        run: |
+          # Every call-*/SKILL.md must declare a Context Window Management (or
+          # equivalent Context Budget) section with per-nesting-level token budgets.
+          # Accepts the English heading, the Japanese heading, or the advisor variant
+          # ("Context Budget Tracking"). Introduced by ADR-013, mirroring the
+          # Caller Response Contract obligation established by ADR-009.
+          fail=0
+          for skill in */.apm/skills/call-*/SKILL.md; do
+            if ! grep -qE '^##+ .*(Context.*Management|Context.*Budget|コンテキスト管理|コンテキスト予算)' "$skill"; then
+              echo "::error file=$skill::missing Context Window Management / Context Budget heading (ADR-013)"
+              fail=1
+            else
+              echo "  ✓ $skill"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
       - name: Install dependencies
         run: apm install --no-policy
 

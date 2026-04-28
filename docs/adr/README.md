@@ -18,3 +18,4 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-010](./ADR-010-role-taxonomy.md) | 役割明確化タクソノミー (Skills / Agents / Instructions / Hooks) | Accepted |
 | [ADR-011](./ADR-011-hook-specification-format.md) | Hook Specification Format & Trigger Event Vocabulary | Accepted |
 | [ADR-012](./ADR-012-physical-role-separation.md) | 役割別物理ファイル分離 (Instructions / Hooks の .apm/ 抽出) | Accepted |
+| [ADR-013](./ADR-013-context-budget-protocol.md) | Context Budget Declaration Protocol (call-* スキルのトークン予算宣言) | Accepted |
