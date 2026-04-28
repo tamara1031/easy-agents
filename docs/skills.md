@@ -65,7 +65,7 @@
 
 | パラメータ | デフォルト | 説明 |
 |---|---|---|
-| `max_consults` | 5 | タスクあたり最大相談回数 |
+| `max_consults` | 3 | タスクあたり最大相談回数 |
 | `advisor_mode` | concise | 応答スタイル (concise/detailed) |
 
 **必須プロンプト構造**:
