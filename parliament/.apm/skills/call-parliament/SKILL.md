@@ -250,7 +250,7 @@ call-parliament を呼び出したエージェント（通常 easy-agent の Del
 | 全議題 APPROVED | Phase 3 で全議題がチェックリストを充足し、Phase 4 で `grand_synthesis` が生成された | `Plan` フェーズへ進む。合意案（`final_deliverable` または `deliverable_path`）を Hierarchy への入力として渡す |
 | `max_rejections` 超過 | 1つ以上の議題で差し戻し回数が上限を超過（チェックリスト未達のまま） | call-parliament の **フォールバック戦略 (Phase 3)** で提示される選択肢（手動選択 / 要件緩和 / Advisory 追加収集）を **そのままユーザーへ転送** する。ユーザー選択後に再実行、または Phase Gate で STOP |
 | 議題 `ERROR` | `topics[].status = ERROR`（議長サブエージェント自体の失敗、ツール不可、致命的内部エラー） | 残存議題の処理を停止し、`error_reason` をユーザーへ報告。**自律的な再試行は行わない**。Advisory 相談または Phase Gate で STOP を選択 |
-| `DISPATCH_FAILURE` | `parliament-chairperson` サブエージェントの起動失敗・タイムアウト・`agent` / `task` / `runSubagent` ツール不可 | **Skip-and-Report**: 当該議題を `ERROR (error_reason: "dispatch failure")` 扱いでスキップし、残存議題の処理を継続する。全議題が `DISPATCH_FAILURE` になった場合（= `agent` ツール全体不可）は Phase Gate で STOP（ADR-014）。 |
+| `DISPATCH_FAILURE` | `parliament-chairperson` サブエージェントの起動失敗・タイムアウト・`agent` / `task` / `runSubagent` ツール不可 | **Skip-and-Report**: 当該議題を `ERROR (error_reason: "dispatch failure")` 扱いでスキップし、残存議題の処理を継続する。全議題が `DISPATCH_FAILURE` になった場合（= `agent` ツール全体不可）は Phase Gate で STOP（ADR-015）。 |
 
 > **転送原則 (Relay Principle)**: easy-agent は `max_rejections` 超過時に独自の選択肢を作らず、call-parliament が提示した選択肢をそのままユーザーに渡す。これによりサブエージェントのフォールバック戦略とオーケストレーターの応答が矛盾しない（ADR-008 参照）。
 

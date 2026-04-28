@@ -19,4 +19,5 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-011](./ADR-011-hook-specification-format.md) | Hook Specification Format & Trigger Event Vocabulary | Accepted |
 | [ADR-012](./ADR-012-physical-role-separation.md) | 役割別物理ファイル分離 (Instructions / Hooks の .apm/ 抽出) | Accepted |
 | [ADR-013](./ADR-013-context-budget-protocol.md) | Context Budget Declaration Protocol (call-* スキルのトークン予算宣言) | Accepted |
-| [ADR-014](./ADR-014-dispatch-failure-protocol.md) | Dispatch Failure Protocol (サブエージェント起動失敗の正規処理規約) | Accepted |
+| [ADR-014](./ADR-014-parallel-orchestration-budget.md) | Parallel Orchestration Budget (連鎖オーケストレーション予算 / cross-skill handoff compression) | Accepted |
+| [ADR-015](./ADR-015-dispatch-failure-protocol.md) | Dispatch Failure Protocol (サブエージェント起動失敗の正規処理規約) | Accepted |

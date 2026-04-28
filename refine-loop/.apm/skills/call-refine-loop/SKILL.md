@@ -193,7 +193,7 @@ refine-loop を呼び出したエージェント（通常 easy-agent）が各返
 | `ESCALATE` | 同一 Fix Rule が3回以上出現 → 成果物に設計上の根本問題 | `Implement` フェーズに差し戻す。設計の根本原因を再検討してから再実装する。必要に応じて Advisory または Parliament へ委譲する。 |
 | `ABORT` ([critical] タグなし) | requirements_checklist に [critical] タグが存在しない | requirements_checklist を再構築し、最低1つ `[critical]` タグを付与して refine-loop を再呼び出しする。再度 ABORT が発生した場合は Phase Gate で STOP してユーザーに報告する。 |
 | `ABORT` (dispatch 不可) | `agent` ツールが利用不可のため refine-loop を起動できない | REVISE ループ（最大2回）にフォールバックする。ユーザーに `[refine-loop 不可: agent ツールなし。自己評価モードで継続します]` と通知する。 |
-| `DISPATCH_FAILURE` | `agent` / `task` / `runSubagent` ツール不可でサブエージェントが起動できない（[ADR-014](../../../docs/adr/ADR-014-dispatch-failure-protocol.md) 正規名。`ABORT (dispatch 不可)` と等価） | **Fallback-Mode**: REVISE ループ（最大2回）にフォールバックする。ユーザーに `[refine-loop 不可: agent ツールなし。自己評価モードで継続します]` と通知する。 |
+| `DISPATCH_FAILURE` | `agent` / `task` / `runSubagent` ツール不可でサブエージェントが起動できない（[ADR-015](../../../docs/adr/ADR-015-dispatch-failure-protocol.md) 正規名。`ABORT (dispatch 不可)` と等価） | **Fallback-Mode**: REVISE ループ（最大2回）にフォールバックする。ユーザーに `[refine-loop 不可: agent ツールなし。自己評価モードで継続します]` と通知する。 |
 
 > **MAX_ITER と ESCALATE の違い**: `MAX_ITER` は「時間切れ（品質は向上しているが収束しなかった）」、`ESCALATE` は「設計的な詰まり（同じ問題が繰り返される）」。前者はユーザーの裁量で続行可能、後者は再設計が必要。
 

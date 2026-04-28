@@ -1,4 +1,4 @@
-# ADR-014: Dispatch Failure Protocol — サブエージェント起動失敗の正規処理規約
+# ADR-015: Dispatch Failure Protocol — サブエージェント起動失敗の正規処理規約
 
 - **ステータス**: Accepted
 - **決定日**: 2026-04-28
