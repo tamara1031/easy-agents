@@ -360,6 +360,9 @@ jobs:
           # skill no longer defines (or vice-versa after a rename).
           # ADR-015: call-advisor is now included, and DISPATCH_FAILURE is tracked for all
           # four skills.
+          # Coverage extended to include all per-unit return statuses (ADR-008):
+          #   parliament: AGREED, CONVERGED added (per-topic chairperson_output statuses)
+          #   hierarchy:  IN_REVIEW, ERROR added (per-task manager_output statuses)
           python3 - <<'PY'
           import re, sys
           skill_files = {
@@ -370,8 +373,8 @@ jobs:
           }
           attributed = {
               "refine-loop": {"ESCALATE", "MAX_ITER", "ABORT", "DISPATCH_FAILURE"},
-              "parliament":  {"MAX_ROUNDS", "max_rejections", "DISPATCH_FAILURE"},
-              "hierarchy":   {"max_rejections", "DISPATCH_FAILURE"},
+              "parliament":  {"AGREED", "CONVERGED", "MAX_ROUNDS", "max_rejections", "DISPATCH_FAILURE"},
+              "hierarchy":   {"IN_REVIEW", "ERROR", "max_rejections", "DISPATCH_FAILURE"},
               "advisor":     {"PROCEED", "CORRECT", "ESCALATE", "STOP", "DISPATCH_FAILURE"},
           }
           fail = False
