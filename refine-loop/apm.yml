@@ -1,5 +1,5 @@
 name: refine-loop
-version: 0.1.0
+version: 0.1.1
 description: 反復改善ループ。成果物（コード・設計・計画）をバイアスフリーな新規サブエージェントが繰り返しレビューし収束させる。empirical-prompt-tuning の原理を汎用成果物品質保証に適用したパッケージ
 author: tamara1031
 license: MIT
