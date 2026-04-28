@@ -30,7 +30,8 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: write   # commit + tag push to main
+  actions: write    # dispatch the Release workflow on the new tag
 
 jobs:
   prepare:
