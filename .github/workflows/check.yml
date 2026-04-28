@@ -358,17 +358,21 @@ jobs:
           # actually appears in the corresponding call-X/SKILL.md Caller Response Contract.
           # This detects vocabulary drift where easy-agent references a status that the
           # skill no longer defines (or vice-versa after a rename).
+          # ADR-014: call-advisor is now included, and DISPATCH_FAILURE is tracked for all
+          # four skills.
           python3 - <<'PY'
           import re, sys
           skill_files = {
               "refine-loop": "refine-loop/.apm/skills/call-refine-loop/SKILL.md",
               "parliament":  "parliament/.apm/skills/call-parliament/SKILL.md",
               "hierarchy":   "taskforce/.apm/skills/call-hierarchy/SKILL.md",
+              "advisor":     "advisor/.apm/skills/call-advisor/SKILL.md",
           }
           attributed = {
-              "refine-loop": {"ESCALATE", "MAX_ITER", "ABORT"},
-              "parliament":  {"MAX_ROUNDS", "max_rejections"},
-              "hierarchy":   {"max_rejections"},
+              "refine-loop": {"ESCALATE", "MAX_ITER", "ABORT", "DISPATCH_FAILURE"},
+              "parliament":  {"MAX_ROUNDS", "max_rejections", "DISPATCH_FAILURE"},
+              "hierarchy":   {"max_rejections", "DISPATCH_FAILURE"},
+              "advisor":     {"PROCEED", "CORRECT", "ESCALATE", "STOP", "DISPATCH_FAILURE"},
           }
           fail = False
           for skill, tokens in attributed.items():
@@ -388,6 +392,24 @@ jobs:
                       print(f"  ✓ {skill}: '{token}' present in Caller Response Contract")
           sys.exit(1 if fail else 0)
           PY
+
+      - name: Lint dispatch failure handling (ADR-014 Lint F)
+        run: |
+          # Every call-*/SKILL.md must declare explicit DISPATCH_FAILURE handling
+          # in its Caller Response Contract section. Introduced by ADR-014 to ensure
+          # all skills have a defined behavior when the subagent itself cannot be
+          # started (tool unavailable, timeout, etc.), as distinct from a subagent
+          # that starts but returns an ERROR status.
+          fail=0
+          for skill in */.apm/skills/call-*/SKILL.md; do
+            if ! grep -qF 'DISPATCH_FAILURE' "$skill"; then
+              echo "::error file=$skill::missing DISPATCH_FAILURE handling in Caller Response Contract (ADR-014 Lint F)"
+              fail=1
+            else
+              echo "  ✓ $skill"
+            fi
+          done
+          [ "$fail" -eq 0 ]
 
       - name: Lint Context Window Management declaration (ADR-013)
         run: |
