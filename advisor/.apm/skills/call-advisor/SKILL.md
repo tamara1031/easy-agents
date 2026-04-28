@@ -175,6 +175,7 @@ call-advisor を呼び出したエージェント（通常 easy-agent の Phase 
 | `CORRECT` | 修正必要。`recommended_approach` の指摘を反映してから続行 | 同一フェーズに戻り、`recommended_approach` で示された方針に従って修正・再実行する。修正後に再相談は不要（`max_consults` 節約） |
 | `ESCALATE` | advisor 単独では解決不能。`escalation_target` で示されるサブエージェントへ委譲 | `escalation_target` の値に応じて `call-hierarchy` または `call-parliament` を起動する。引き継ぎペイロード（次節「ESCALATE 判定後のフロー」参照）を構築して委譲する |
 | `STOP` | 続行不可。ユーザー判断が必要 | 処理を停止し、`analysis` / `risks` をユーザーへ報告する。**自動継続せずユーザー指示を仰ぐ**。Confirmation Gate 相当の対応 |
+| `DISPATCH_FAILURE` | アドバイザーサブエージェントの起動失敗・タイムアウト・`agent` / `task` / `runSubagent` ツール不可 | **Degrade-and-Continue**: 相談なしで現在の判断を自律継続する。ユーザーに `[advisor 不可: 自律判断で継続します]` と通知する。`max_consults` カウントは消費しない（ADR-014）。 |
 
 > **CORRECT と ESCALATE の違い**: `CORRECT` は「現在のエージェントが修正可能な範囲」（実装ミス、計画調整）。`ESCALATE` は「現在のエージェントの能力範囲を超える」（複数モジュール跨ぎ、設計判断）。エグゼキューターが自身で適用可能なら `CORRECT`、組織化された下位スキルが必要なら `ESCALATE`。
 
