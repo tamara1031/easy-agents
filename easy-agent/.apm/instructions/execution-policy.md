@@ -105,6 +105,33 @@
 2. **サブエージェント委譲時**: 委譲に必要な「コンテキスト」のみを抽出して渡す。全履歴は渡さない。
 3. **5回以上の往復**: ループ回数が 5回を超えた場合、中間要約を作成してコンテキストを圧縮する。
 
+### スキル別コンテキスト予算サマリー
+
+easy-agent のコンテキストに対して各スキルが消費するトークン数の見積もり。
+詳細な階層別内訳は各スキルの SKILL.md「Context Window Management § トークン予算」を参照。
+
+| スキル | easy-agent → スキル (入力上限) | スキル → easy-agent (出力上限) | 参照先 |
+| :--- | :--- | :--- | :--- |
+| `call-advisor` | 500〜1,000トークン | 400〜700トークン | `advisor/call-advisor/SKILL.md` |
+| `call-parliament` | 1,000トークン | 600トークン | `parliament/call-parliament/SKILL.md` |
+| `call-hierarchy` | 1,000トークン | 500トークン | `taskforce/call-hierarchy/SKILL.md` |
+| `call-refine-loop` | 1,000トークン | 600トークン | `refine-loop/call-refine-loop/SKILL.md` |
+
+> **内部多段消費**: 上記はオーケストレーター視点の消費量のみ。各スキル内部でさらにサブエージェントが起動するが、Background Task パターンにより easy-agent のコンテキストには影響しない。
+
+### 連鎖呼び出し時の総コンテキスト見積もり (ADR-013 / ADR-014)
+
+TaskType ごとに想定される最大コンテキスト消費量の目安。フェーズ間の中間作業（ファイル読み込み、コード生成）は含まない。
+
+| TaskType | 使用スキルシーケンス | 最大消費上限 (概算) |
+| :--- | :--- | :--- |
+| `execute` | (委譲なし) | — |
+| `hybrid` | Advisor × 1-3 → Refine-loop | 1,700 + 1,600 = **3,300トークン** |
+| `hybrid` (Large) | Advisor × 1-3 → Hierarchy → Refine-loop | 1,700 + 1,500 + 1,600 = **4,800トークン** |
+| `designExecute` | Advisor → Parliament → Advisor → Hierarchy → Refine-loop | 1,700 + 1,600 + 1,700 + 1,500 + 1,600 = **8,100トークン** |
+
+> **計算式**: Advisor = 最大 1,700 (入力 1,000 + 出力 700)、Parliament = 1,600 (入力 1,000 + 出力 600)、Hierarchy = 1,500 (入力 1,000 + 出力 500)、Refine-loop = 1,600 (入力 1,000 + 出力 600)。
+
 ### Parliament → Hierarchy 連鎖予算 (ADR-014)
 
 `designExecute` で Parliament → Hierarchy をチェーンする場合、以下の連鎖予算テーブルを守ること。

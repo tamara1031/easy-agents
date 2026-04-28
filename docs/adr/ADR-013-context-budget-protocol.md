@@ -85,11 +85,21 @@ Parliament・Hierarchy は複数の子エージェントを直列起動するた
 - **CI による退行防止**: 新スキル追加時に宣言漏れを CI が検出する。
 - **ADR-009 との対称性**: Caller Response Contract と並ぶ、スキルの「2大公約事項」として位置付けられる。
 
+## 命名規則ガイド
+
+`call-advisor` が採用する `Context Budget Tracking` と、`call-parliament`・`call-hierarchy`・`call-refine-loop` が採用する `Context Window Management` は同義である。両名称は以下の理由から共存を正式に許容する:
+
+- `call-advisor` は本 ADR 制定前から独自の命名を使用しており、変更は既存の参照を壊す。
+- CI lint は正規表現 `Context.*Management|Context.*Budget|コンテキスト管理|コンテキスト予算` で両形式を許容する。
+
+**新規追加ルール**: 新たに追加するセクションは `Context Window Management (コンテキスト管理)` を優先する。
+
 ## 今後の課題
 
-- `call-advisor` の `Context Budget Tracking` セクション名を `Context Window Management` に統一するか、または両名称を正式に許容する命名ガイドを ADR に追記する。
+- ~~`call-advisor` の `Context Budget Tracking` セクション名を `Context Window Management` に統一するか、または両名称を正式に許容する命名ガイドを ADR に追記する。~~ → **解決済み**: 上記「命名規則ガイド」セクションで正式許容を明文化 (2026-04-28)
 - トークン予算の実測値収集: 実際の運用データに基づいて各スキルの上限値を調整する。
-- easy-agent.agent.md に「並列呼び出し時の総コンテキスト見積もり」セクションを追加する（Parliament + Hierarchy 連鎖時の上限合算ルール）。
+- ~~easy-agent.agent.md に「並列呼び出し時の総コンテキスト見積もり」セクションを追加する（Parliament + Hierarchy 連鎖時の上限合算ルール）。~~ → **解決済み**: `execution-policy.md` と `easy-agent.agent.md` に「スキル別コンテキスト予算サマリー」「連鎖呼び出し時の総コンテキスト見積もり」「Parliament + Hierarchy 連鎖引き継ぎ圧縮ルール」を追加 (2026-04-28)
+- ~~`call-skill-template.md` の Context Window Management セクションが「オプション」扱いのため、ADR-013 の義務化と矛盾している。~~ → **解決済み**: テンプレートを必須化し、ADR-013 準拠のトークン予算テーブル雛形を追加 (2026-04-28)
 
 ## 関連決定
 
