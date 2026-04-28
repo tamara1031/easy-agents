@@ -111,6 +111,19 @@ jobs:
           git push origin "HEAD:${GITHUB_REF_NAME}"
           git push origin "$TAG"
 
+      - name: Trigger Release build
+        # Tag pushes made with the default GITHUB_TOKEN do NOT fan out to other
+        # workflows (GitHub security restriction). workflow_dispatch is one of
+        # the documented exceptions, so we explicitly dispatch the Release
+        # workflow on the freshly-pushed tag ref to run the build & publish.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh workflow run release.yml --ref "$TAG"
+          echo "Dispatched Release workflow on $TAG"
+
       - name: Summary
         env:
           CUR: ${{ steps.ver.outputs.current }}
