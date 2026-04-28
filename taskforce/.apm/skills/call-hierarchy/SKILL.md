@@ -61,6 +61,21 @@ runSubagent(
 - 各呼び出しはステートレス
 - プロンプトに必要な情報を全て含めること
 
+### Claude Code パターン (`agent` ツール利用時)
+
+`agent` ツールでマネージャーを直接起動する。
+
+```
+Agent(
+  subagent_type: "hierarchy-manager",
+  description: "{task_description}",
+  prompt: "<下記テンプレートに従って構築>"
+)
+```
+
+- 結果はエージェントの返り値として直接受け取る（`read_agent` 不要）。
+- 並列実行は依存関係のない `Agent` 呼び出しを同一メッセージで並べることで実現する。
+
 ## Parameters
 
 | パラメータ | 説明 | デフォルト値 |

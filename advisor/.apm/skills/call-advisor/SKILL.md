@@ -10,7 +10,7 @@ agents: [advisor]
 
 アドバイザー (Opus) に戦略的助言を求めるスキル。
 
-> **Advisor パターン**: を VS Code Copilot エージェント向けに最適化したスキルです。
+> **Advisor パターン**: CLI / VS Code Copilot / Claude Code の各環境に対応したスキルです。
 
 * **高知能モデルをアドバイザーに割り当てる (Sonnet/Haiku用)**
   * エグゼキューターはコスト効率の良いモデル (Sonnet/Haiku)
@@ -56,6 +56,24 @@ runSubagent(
 
 * **advisor は model: "Claude Opus 4.7" / tools: []** で定義済み
 * プロンプトにソースコードや設計ドキュメントの要約を、自分の役割や目的に応じて必要な情報を含めて渡すこと。
+
+### Claude Code パターン (`agent` ツール利用時)
+
+`agent` ツールでアドバイザーを直接起動する。Skill ツールの再呼び出しは不要。
+
+```
+Agent(
+  subagent_type: "advisor",
+  description: "Advisor consultation #{n}",
+  prompt: "<下記テンプレートに従って構築>"
+)
+```
+
+* **advisor は model: "Claude Opus 4.7" / tools: []** で定義済み
+* 結果はエージェントの返り値として直接受け取る（`read_agent` 不要）。
+* プロンプトにソースコードや設計ドキュメントの要約を含めること。
+
+> **`advisor()` システムレベルツールと混同しないこと**: グローバル設定で注入される `advisor()` ツール（セッション全体のトランスクリプトを参照するレビュアー）は call-advisor スキルの実装ではない。このツールを呼び出した場合も **max_consults にカウントする**。呼び出し先が advisor サブエージェントかシステムレベルツールかに関わらず、1回の呼び出しで消費が1増える。
 
 ## Parameters
 

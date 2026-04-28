@@ -60,6 +60,21 @@ runSubagent(
 - 各呼び出しは **ステートレス**
 - プロンプトに必要な情報を全て含めること
 
+### Claude Code パターン (`agent` ツール利用時)
+
+`agent` ツールで議長を直接起動する。
+
+```
+Agent(
+  subagent_type: "parliament-chairperson",
+  description: "{topic_title}",
+  prompt: "<下記テンプレートに従って構築>"
+)
+```
+
+- 結果はエージェントの返り値として直接受け取る（`read_agent` 不要）。
+- 依存関係のない議題は複数の `Agent` 呼び出しを並列に実行できる。
+
 ## Parameters
 
 | パラメータ | 説明 | デフォルト値 |
