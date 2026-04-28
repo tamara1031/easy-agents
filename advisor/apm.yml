@@ -1,5 +1,5 @@
 name: advisor
-version: 0.1.1
+version: 0.1.2
 description: Opus アドバイザーパターン。エグゼキューター（Sonnet/Haiku）が重要な判断ポイントで Opus に相談し、設計・実装方針の助言・リスク指摘・エスカレーション判断を受けるパッケージ
 author: tamara1031
 license: MIT
