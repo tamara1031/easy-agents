@@ -48,6 +48,10 @@
                         ],
                         "description": "PASS/FAIL: Reviewer が検証済みの最新判定。COVERED: Implementer が対応済み。上位の Manager は Reviewer の最新を待つか適宜ステータス、Manager は COVERED を REVISE に戻し、Reviewer が PASS/FAIL に変更する。"
                     },
+                    "is_critical": {
+                        "type": "boolean",
+                        "description": "チェックリスト項目に [critical] タグが付いているか。true の場合、FAIL は必ず REVISE を引き起こす。false/省略の場合、FAIL は risks に記録されるが APPROVE を妨げない。"
+                    },
                     "detail": {
                         "type": "string"
                     }

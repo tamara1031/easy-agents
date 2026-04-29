@@ -154,11 +154,13 @@ Reviewer から受け取るもの:
 
 > **Generator-Verifier 原則**: Reviewer (Verifier) は「良い/悪い」ではなく、チェックリストの各項目に対して PASS/FAIL を明示的に判定する。FAIL の場合は Implementer (Generator) に行動可能な修正指示を出す。
 
+> **[critical] 認識**: Reviewer が `APPROVE` を返す際に non-critical FAIL が `risks` に含まれる場合がある（ADR-018）。マネージャーはその `risks` を `residual_risks` へそのまま転記し、提出を進めること。non-critical FAIL を理由に差し戻しを行わない。
+
 #### 回数の限定と枯渇
 
 1. 内部ループ (Implementer -> Reviewer でのフィードバックが収束しない場合 (例: 修正→別の問題発生→修正→最初の問題再発):
-2. 3回目の REVISE で前回と同じチェックリスト項目が FAIL = 根本解決の失敗
-3. チェックリスト全項目の達成未達による差し戻し上限: 5回
+2. 3回目の REVISE で前回と同じ **`[critical]` タグ付き** チェックリスト項目が FAIL = 根本解決の失敗
+3. `[critical]` 項目の達成未達による差し戻し上限: 5回
 4. 枯渇時、マネージャーは `skills/call-hierarchy/schemas/manager_output.json` の `status: "ERROR"` と `error_reason` にループ経緯の要約を記載してオーケストレーターに失敗を報告して終了する。
 
 ### 5. 成果物提出 (SUBMIT_TO_ORCHESTRATOR)
@@ -166,8 +168,8 @@ Reviewer から受け取るもの:
 Reviewer が `APPROVE` を返したら、以下の情報を JSON 出力 (`skills/call-hierarchy/schemas/manager_output.json`) としてオーケストレーターへ返却する:
 
 - 成果物のパスまたは内容 (`deliverable_path`)
-- チェックリスト各項目の達成証跡 (`checklist_validation`)
-- 内部ループ回数と残存リスク (`internal_loop_count`, `residual_risks`)
+- チェックリスト各項目の達成証跡 (`checklist_validation`)。各項目に `is_critical` を付与して転記する。
+- 内部ループ回数と残存リスク (`internal_loop_count`, `residual_risks`)。Reviewer が `risks` に記録した non-critical FAIL をここへ含める。
 
 > マネージャー出力の JSON 形式はオーケストレーターの想定する JSON スキーマに従って出力すること。
 
