@@ -1,5 +1,5 @@
 name: easy-agent
-version: 0.1.6
+version: 0.1.7
 description: ユニバーサルエントリーポイント。タスクを3軸（曖昧度×TaskScale×TaskType）で分類し Phase Pipeline を構成し、advisor・parliament・taskforce を組み合わせて自律的にタスクを完遂する
 author: tamara1031
 license: MIT
