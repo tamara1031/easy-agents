@@ -22,3 +22,4 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-014](./ADR-014-parallel-orchestration-budget.md) | Parallel Orchestration Budget (連鎖オーケストレーション予算 / cross-skill handoff compression) | Accepted |
 | [ADR-015](./ADR-015-dispatch-failure-protocol.md) | Dispatch Failure Protocol (サブエージェント起動失敗の正規処理規約) | Accepted |
 | [ADR-016](./ADR-016-memoir-agent-bridge.md) | Memoir Agent Bridge Pattern (VS Code 長期記憶アクセス) | Accepted |
+| [ADR-017](./ADR-017-symmetric-output-schema-coverage.md) | Symmetric Output Schema Coverage (全 call-* スキルへの JSON スキーマ適用) | Accepted |
