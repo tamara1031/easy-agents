@@ -21,3 +21,4 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-013](./ADR-013-context-budget-protocol.md) | Context Budget Declaration Protocol (call-* スキルのトークン予算宣言) | Accepted |
 | [ADR-014](./ADR-014-parallel-orchestration-budget.md) | Parallel Orchestration Budget (連鎖オーケストレーション予算 / cross-skill handoff compression) | Accepted |
 | [ADR-015](./ADR-015-dispatch-failure-protocol.md) | Dispatch Failure Protocol (サブエージェント起動失敗の正規処理規約) | Accepted |
+| [ADR-016](./ADR-016-memoir-agent-bridge.md) | Memoir Agent Bridge Pattern (VS Code 長期記憶アクセス) | Accepted |

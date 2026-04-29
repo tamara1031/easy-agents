@@ -13,6 +13,7 @@
 | hierarchy-manager | taskforce | ❌ | Sonnet | read, search, agent, todo |
 | hierarchy-member | taskforce | ❌ | Sonnet | read, edit, search, execute, agent |
 | refine-loop | refine-loop | ❌ | Sonnet | read, edit, search, execute, agent |
+| memoir | memoir | ❌ | Sonnet | execute |
 
 > **返却ステータスの解釈**: 以下の表は各エージェントの返却概要のみを示す。各ステータスに対する呼び出し元の詳細な対応（Caller Response Contract）は、対応する `call-X/SKILL.md` を参照すること。easy-agent.agent.md の Fallback Chain と SKILL.md の記述がドリフトした場合は **SKILL.md を Source of Truth とする**（[ADR-009](./adr/ADR-009-caller-response-contract-convention.md) 規約 4）。
 
@@ -215,3 +216,33 @@ Implementer → Reviewer → (REVISE の場合) → Implementer (最大5回)
 3. **1 イテレーション = 1 テーマの修正** — 因果関係を明確に保つ
 4. **自己評価禁止** — refine-loop 自身がレビュアー役を兼任しない (`agent` ツールが利用不可なら ABORT)
 5. **ESCALATE は設計問題のシグナル** — ループ内では解決せず呼び出し元に返す
+
+---
+
+## memoir
+
+**パス**: `memoir/.apm/agents/memoir.agent.md`
+
+**役割**: VS Code / GitHub Copilot 環境向け長期記憶ブリッジエージェント。`runSubagent(agentName: "memoir", ...)` 経由で呼び出され、受け取った自然言語コマンド（Save / Search / Update / Delete）を memoir スクリプトに変換して実行する。
+
+> **Claude Code では使用しない**: Claude Code では `long-term-memory` スキルを直接呼び出すこと（[ADR-016](./adr/ADR-016-memoir-agent-bridge.md)）。
+
+### 呼び出しコマンド形式
+
+| コマンド | 例 |
+|---|---|
+| Save | `Save: items=[{"text": "...", "tags": ["user"]}], source='session', dedup=true` |
+| Search | `Search: query='...', tags='project', n-results=5` |
+| Update | `Update: id='...', text='...', tags=['tag']` |
+| Delete | `Delete: id='...'` または `Delete: tag='...', confirm=true` |
+
+### 返却形式
+
+| 操作 | 成功 | 失敗 |
+|---|---|---|
+| Save | `{"status": "saved", "count": N}` | `{"status": "error", "message": "..."}` |
+| Search | スクリプト出力の JSON | `{"status": "error", "message": "..."}` |
+| Update | `{"status": "updated", "id": "..."}` | `{"status": "error", "message": "..."}` |
+| Delete | `{"status": "deleted", "count": N}` | `{"status": "error", "message": "..."}` |
+
+memoir 失敗時、呼び出し元 (`easy-agent`) は静かにスキップする（ADR-015 Degrade-and-Continue 相当）。
