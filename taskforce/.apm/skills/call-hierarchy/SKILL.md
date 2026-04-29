@@ -115,7 +115,9 @@ Agent(
 ### Phase 1: 初期化
 
 1. ユーザーの入力言語からタスク一覧を作成（タスク ID: `T001` 形式）
-2. 各タスクに承認条件チェックリスト（客観的な判断条件）を設定
+2. 各タスクに承認条件チェックリスト（客観的な判断条件）を設定する。
+   - **重要度タグ**: 達成必須の条件には行頭に `[critical]` を付与する。タグなし項目はベストエフォートとして Reviewer が FAIL しても `risks` への記録にとどめ、REVISE を引き起こさない。
+   - 例: `- [critical] ユーザー認証が機能すること` / `- ドキュメントのスタイルガイドに準拠すること`
 3. `checklist_path` へチェックリストを書き出す。
 4. ユーザーに提示して承諾を求める（承諾なしの起動は禁止）
 
@@ -178,10 +180,12 @@ Agent(
 ### Phase 3: ゲートキーパーレビュー
 
 1. Reviewer は Generator-Verifier パターン の Verifier として機能する。
-2. チェックリストの全項目を客観的に審査
-3. 合否判定 → 成功なら APPROVED
-4. 失敗なら REVISE → 差し戻し再試行
-5. 差し戻し "max_rejections" 回数 → ユーザーエスカレーション
+2. チェックリストの全項目を客観的に審査し、各項目の `is_critical` を `[critical]` タグの有無から判定して記録する。
+3. **[critical] 2段階合否判定** (ADR-018):
+   - `[critical]` 項目が **全て PASS** → `verdict: APPROVE`。non-critical FAIL は `risks` に記録する。
+   - `[critical]` 項目が **1つでも FAIL** → `verdict: REVISE`。critical FAIL のみを `rejection_instructions` に列挙する。
+4. 差し戻し → Implementer が critical 項目を修正 → 再レビュー
+5. 差し戻し "max_rejections" 回数（critical 項目の FAIL 基準）→ ユーザーエスカレーション
 
 以下のパターンを検出した場合は "REJECTED" とする：
 
@@ -294,10 +298,10 @@ call-hierarchy を呼び出したエージェント（通常 easy-agent の Impl
 
 | ステータス | 意味 | 呼び出し元が取るべきアクション |
 | :--- | :--- | :--- |
-| `IN_REVIEW` | Manager が成果物をオーケストレーターへ提出（Reviewer 検証は完了） | `checklist_validation` を確認。全項目 PASS かつ Phase 3 検証パターン（単一ファイルハック等）に該当しなければ当該タスクを `APPROVED` に遷移。それ以外は `REJECTED` で差し戻し |
+| `IN_REVIEW` | Manager が成果物をオーケストレーターへ提出（Reviewer 検証は完了） | `checklist_validation` を確認。**`[critical]` 項目が全て PASS**（`is_critical: true` かつ `result: "PASS"`）かつ Phase 3 検証パターン（単一ファイルハック等）に該当しなければ当該タスクを `APPROVED` に遷移。`[critical]` 項目の FAIL が 1 つでもあれば `REJECTED` で差し戻し。non-critical (`is_critical: false`) の FAIL は `APPROVED` を妨げず `residual_risks` に転記する（ADR-018）。 |
 | `ERROR` | Manager 内部ループ上限超過などマネージャーが自力で回復不能な失敗 | 当該タスクのステータスを `ERROR` に固定し、`error_reason` を要約。**自律的な再投入は行わない**。タスク全体への影響を評価し、Advisory 相談か Phase Gate で STOP を選択 |
 
-> **REJECTED は差し戻しカウント (`rejection_count`) を 1 加算してから再キューする**。`max_rejections` を超過した時点でオーケストレーター集約レベルのフォールバックへ遷移する（下表参照）。
+> **REJECTED は差し戻しカウント (`rejection_count`) を 1 加算してから再キューする**。`max_rejections` を超過した時点でオーケストレーター集約レベルのフォールバックへ遷移する（下表参照）。`max_rejections` カウントの対象は `[critical]` 項目の FAIL に基づく REJECTED のみ。
 
 ### オーケストレーター集約レベルの返却ステータス
 
