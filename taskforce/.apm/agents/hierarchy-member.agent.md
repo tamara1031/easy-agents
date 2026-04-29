@@ -62,8 +62,11 @@ tools: [read, edit, search, execute, agent]
 
 1. Implementer の成果物 (`{previous_output}`) をチェックリストの各項目に対して検証する。
 2. 各項目に `PASS` / `FAIL` を判定し、`FAIL` の場合は具体的な問題点と改善案を提示する。
-3. 最終的な `verdict` を `APPROVE` (承認) または `REVISE` (差し戻し) で判定する。
-4. `REVISE` の場合は Implementer が対応できる具体的な修正指示を記載する。
+   - 各項目の `is_critical` を `[critical]` タグの有無から判定し、`checklist_coverage` に記録する。
+3. **2段階 verdict 判定** (refine-loop との整合: ADR-018):
+   - `[critical]` タグ付き項目が **1つでも FAIL** → `verdict: "REVISE"`。`rejection_instructions` に critical FAIL 項目のみを列挙する。
+   - `[critical]` タグ付き項目が **全て PASS** → `verdict: "APPROVE"`。non-critical の FAIL は `risks` に記録する（ブロッキングしない）。
+4. `REVISE` の場合は `rejection_instructions` に Implementer が対応できる具体的な修正指示を記載する（critical 項目のみ）。
 
 #### レビュー品質ガード
 
@@ -123,10 +126,12 @@ tools: [read, edit, search, execute, agent]
 [ ] 使用した API・クラスがコードベースに実在するか確認したか
 
 ### Reviewer の場合
-[ ] チェックリストの各項目に PASS/FAIL を明示し、FAIL の場合は具体的な改善案を提示したか
+[ ] チェックリストの各項目に PASS/FAIL と `is_critical` を明示したか
+[ ] `[critical]` 項目が全て PASS なら `APPROVE`、1 つでも FAIL なら `REVISE` としたか
+[ ] non-critical の FAIL は `risks` に記録し、`rejection_instructions` に含めていないか
 [ ] テスト用ハックや YAGNI 違反 (過剰設計) を見逃していないか
 [ ] Implementer の使用した API が実在することを確認したか
-[ ] `REVISE` の場合は Implementer が対応できる具体的な修正指示を記載したか
+[ ] `REVISE` の場合は critical FAIL のみを対象に具体的な修正指示を記載したか
 
 ## Thinking Guidance (思考ガイダンス) `[role: instruction]`
 
