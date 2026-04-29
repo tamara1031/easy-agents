@@ -511,6 +511,41 @@ jobs:
           done
           [ "$fail" -eq 0 ]
 
+      - name: Lint runSubagent agent name references
+        run: |
+          # Every runSubagent(agentName: "X", ...) call in any .apm/**/*.md file
+          # must reference an agent name that exists in some package's
+          # .apm/agents/*.agent.md (as declared in its `name:` frontmatter field).
+          # This catches the structural drift where a hook or skill describes
+          # calling a named agent that has never been defined — e.g., the memoir
+          # VS Code bridge pattern introduced in ADR-016.
+          # Template placeholders like {agent-name} are skipped.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          AGENT_RE = re.compile(r'runSubagent\(\s*agentName:\s*["\']([A-Za-z0-9_-]+)["\']')
+          PLACEHOLDER_RE = re.compile(r'^\{')
+          agent_names = set()
+          for agent_file in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = agent_file.read_text()
+              m = re.search(r'^name:\s*["\']?([A-Za-z0-9_-]+)["\']?', text, re.MULTILINE)
+              if m:
+                  agent_names.add(m.group(1))
+          fail = False
+          for md_file in sorted(pathlib.Path(".").glob("*/.apm/**/*.md")):
+              text = md_file.read_text()
+              for m in AGENT_RE.finditer(text):
+                  agent_name = m.group(1)
+                  if PLACEHOLDER_RE.match(agent_name):
+                      continue
+                  if agent_name not in agent_names:
+                      print(f"::error file={md_file}::runSubagent references undefined agent "
+                            f"'{agent_name}' — add {agent_name}.agent.md to the appropriate package")
+                      fail = True
+                  else:
+                      print(f"  ✓ {md_file}: runSubagent(agentName: '{agent_name}')")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Lint Context Window Management declaration (ADR-013)
         run: |
           # Every call-*/SKILL.md must declare a Context Window Management (or
