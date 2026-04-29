@@ -131,7 +131,7 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
-      - name: Lint subagent output schema status enum consistency (ADR-008/009)
+      - name: Lint subagent output schema status enum consistency (ADR-008/009/017)
         run: |
           # Verifies that the JSON schema status enums for subagent return values
           # are consistent with the per-unit statuses documented in the corresponding
@@ -139,9 +139,11 @@ jobs:
           # check: the schema must contain exactly the expected status values, and
           # each of those values must appear in the SKILL.md contract.
           #
-          # Covers:
+          # Covers all four call-* skills (ADR-017 extends to advisor and refine-loop):
           #   parliament/chairperson_output.json  <->  call-parliament/SKILL.md
           #   taskforce/manager_output.json       <->  call-hierarchy/SKILL.md
+          #   advisor/advisor_output.json         <->  call-advisor/SKILL.md
+          #   refine-loop/refine_loop_output.json <->  call-refine-loop/SKILL.md
           #
           # If a developer adds a new status to a schema without updating:
           #   a) the expected_statuses set here (single source of truth in CI), or
@@ -164,6 +166,20 @@ jobs:
                   "pointer":  ["properties", "status", "enum"],
                   "expected": {"IN_REVIEW", "ERROR"},
                   "label":    "hierarchy manager_output.status",
+              },
+              {
+                  "schema":   "advisor/.apm/skills/call-advisor/schemas/advisor_output.json",
+                  "skill":    "advisor/.apm/skills/call-advisor/SKILL.md",
+                  "pointer":  ["properties", "verdict", "enum"],
+                  "expected": {"PROCEED", "CORRECT", "ESCALATE", "STOP"},
+                  "label":    "advisor advisor_output.verdict",
+              },
+              {
+                  "schema":   "refine-loop/.apm/skills/call-refine-loop/schemas/refine_loop_output.json",
+                  "skill":    "refine-loop/.apm/skills/call-refine-loop/SKILL.md",
+                  "pointer":  ["properties", "status", "enum"],
+                  "expected": {"CONVERGED", "MAX_ITER", "ESCALATE", "ABORT"},
+                  "label":    "refine-loop refine_loop_output.status",
               },
           ]
 
