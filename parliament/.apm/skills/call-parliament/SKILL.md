@@ -80,11 +80,31 @@ Agent(
 | パラメータ | 説明 | デフォルト値 |
 | :--- | :--- | :--- |
 | `parallelism` | 議題の同時並列実行最大数 | 3 |
-| `max_rejections` | 1議題あたりの差し戻し上限回数 | 3 |
+| `max_rejections` | 1議題あたりの差し戻し上限回数。**`[critical]` タグが存在する場合は `[critical]` 項目の FAIL に起因する CRITIQUE スタンスのみをカウントする** | 3 |
 | `summary_interval` | 議長が要約を挟む発言数間隔 | 4 |
 | `member_count` | 議論に参加するメンバー数 (最低4)。競合案が複数ある場合は **競合案数 + 3** を設定すること (例: 3案 → 6名)。議長は別カウント。 | 4 |
 | `max_rounds` | 議論ラウンドの上限 | 5 |
 | `convergence_threshold` | 新規論点が出ないラウンド数で早期終了 | 2 |
+
+### チェックリストの `[critical]` タグ
+
+チェックリスト項目の行頭に `[critical]` を付与することで、必達条件と努力目標を区別できる。
+
+```markdown
+- [critical] 提案する API は既存の呼び出し規約と後方互換であること
+- [critical] セキュリティ上の脆弱性（OWASP Top 10）が導入されないこと
+- コード例のスタイルガイドに準拠すること
+- 代替アプローチのトレードオフがドキュメント化されていること
+```
+
+**`[critical]` セマンティクス（Parliament 版）**:
+
+| レイヤー | 影響 |
+| :--- | :--- |
+| **Member** | `[critical]` 項目が未達の場合のみ `CRITIQUE` スタンスを使用する。non-critical 項目の懸念は `REVISE` で示す |
+| **Chairperson** | `[critical]` 項目が全員 satisfied → AGREED を宣言可能。non-critical の未解決は `residual_risks` に記録 |
+| **max_rejections** | `[critical]` 項目への `CRITIQUE` ブロックのみカウント。non-critical への `REVISE` はカウントしない |
+| **`[critical]` タグなし** | 従来どおり全項目を均等扱い（後退しない） |
 
 ## Chairperson Prompt Template
 
@@ -156,8 +176,8 @@ Agent(
 
 1. 成果物のチェックリスト各項目を審査し、`[critical]` タグの有無から `is_critical` を判定して記録する。
 2. **[critical] 2段階合否判定** (ADR-019):
-   - `[critical]` 項目が **全て PASS** → `APPROVED`。non-critical FAIL は `unresolved_issues` に記録する。
-   - `[critical]` 項目が **1つでも FAIL** → `REJECTED`（差し戻し理由を明記して再生成）。non-critical FAIL は差し戻し理由に含めない。
+   - `[critical]` 項目が **全て PASS** → `APPROVED`。non-critical FAIL は `residual_risks` として受理する。
+   - `[critical]` 項目が **1つでも FAIL** → `REJECTED`（差し戻し理由に critical 項目のみ明記して再生成）。non-critical FAIL は差し戻し理由に含めない。
 3. 差し戻し → 議長が critical 項目を revisit → 再検収
 4. 差し戻し `max_rejections` 超過 → フォールバック戦略を実行
 
@@ -258,8 +278,8 @@ call-parliament を呼び出したエージェント（通常 easy-agent の Del
 
 | ステータス | 意味 | 呼び出し元が取るべきアクション |
 | :--- | :--- | :--- |
-| `AGREED` | 全メンバーが APPROVE または軽微な REVISE で議論が完了 | `checklist_validation` の **`[critical]` 項目（`is_critical: true`）が全 PASS** であることを確認した上で当該議題を `APPROVED` とし、Phase 4 の集約待ちへ進める。`is_critical: false` の FAIL は `APPROVED` を妨げず `unresolved_issues` として後続フェーズへ引き継ぐ（ADR-019）。 |
-| `CONVERGED` | `convergence_threshold` 連続で新規論点なし（議論停滞による収束） | `unresolved_issues` に対立点が明示されていることを確認の上 `APPROVED` 扱い。残存リスクは `residual_risks` として後続フェーズへ引き継ぐ |
+| `AGREED` | 全メンバーが APPROVE または軽微な REVISE で議論が完了 | `checklist_validation` の **`[critical]` 項目（`is_critical: true`）が全 PASS** であることを確認した上で当該議題を `APPROVED` とし、Phase 4 の集約待ちへ進める。`is_critical: false` の FAIL は `APPROVED` を妨げず `residual_risks` として後続フェーズへ引き継ぐ（ADR-019） |
+| `CONVERGED` | `convergence_threshold` 連続で新規論点なし（議論停滞による収束） | `unresolved_issues` に対立点が明示されていることを確認の上 `APPROVED` 扱い。残存リスクは `residual_risks` として後続フェーズへ引き継ぐ。`[critical]` タグを使用していた場合は `is_critical: true` 項目が全 PASS であることを追加確認すること |
 | `MAX_ROUNDS` | `max_rounds` 到達で強制終了（部分合意） | 残存課題を明記した最善合意案を採用して `APPROVED` 扱いとし、**ユーザーに残存課題と選択肢（続行 / 要件緩和 / Advisory 追加収集）を通知する**。自動で次フェーズへ進めない |
 
 > **AGREED と CONVERGED の違い**: `AGREED` はチェックリストの `[critical]` 項目を満たした能動的合意。`CONVERGED` は新規論点が枯渇したことによる受動的合意（残存対立を明示した上での「現時点の最善案」）。後者は `unresolved_issues` の有無を必ず確認すること。
