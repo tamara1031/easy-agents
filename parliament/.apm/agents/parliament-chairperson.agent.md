@@ -102,13 +102,15 @@ tools: [read, search, agent]
 
 > **Early Termination Flow**: 議長は、対立が残存していても対立点が明示されていれば `APPROVED` とする（`skills/call-parliament/skill.md` 参照）。議論の停滞は「未解決課題」として成果物に追記して終了する。
 
+> **[critical] 2段階合否判定 (ADR-019)**: チェックリストに `[critical]` タグが含まれる場合、合意判定時に以下を適用する。`[critical]` 項目が 1 つでも FAIL → 合意未達（ラウンド継続、または MAX_ROUNDS でも REJECTED 扱い）。`[critical]` 項目が全 PASS → AGREED/CONVERGED に進む（non-critical FAIL は次のステップで `unresolved_issues` に記録）。
+
 ### 5. 合意案と提出 (SUBMIT_TO_ORCHESTRATOR)
 
 合意案が形成されたら、議題を終了し、以下をまとめてオーケストレーターに返却する:
 
 - **最終合意案の内容**
-- **チェックリスト各項目の達成証跡**
-- **未解決事項と残存リスク**
+- **チェックリスト各項目の達成証跡**: `checklist_validation` の各エントリに `[critical]` タグの有無から `is_critical` (boolean) を判定して記録する（ADR-019）。
+- **未解決事項と残存リスク**: non-critical FAIL は `unresolved_issues` へ記録し、`[critical]` FAIL のみを差し戻し理由とする。
 - **議論の要約** (合意に至るプロセス)
 - **最終ステータス**: `AGREED` / `CONVERGED` / `MAX_ROUNDS` (上限到達)
 

@@ -122,6 +122,8 @@ Agent(
 
 1. 大目標を独立した「議題」に分割（議題ID: `T001` 形式）
 2. 各議題に承認条件チェックリストを作成
+   - **重要度タグ**: 合意必達の条件には行頭に `[critical]` を付与する。タグなし項目はベストエフォートとして Chairperson が FAIL しても `unresolved_issues` への記録にとどめ、REJECTED を引き起こさない（ADR-019）。
+   - 例: `- [critical] 競合アプローチから1つの設計方針に絞り込まれていること` / `- API ドキュメントのサンプルが含まれていること`
 3. 全議題のステータスを `TODO` に設定
 4. **ユーザーに議題一覧を提示して承認を求める**
 
@@ -152,11 +154,14 @@ Agent(
 
 ### Phase 3: 個別検収
 
-1. 成果物がチェックリストを **完全に満たしているか** 審査
-2. 満たしている → `APPROVED`
-3. 満たしていない → `REJECTED` (差し戻し理由を明記して再生成)
+1. 成果物のチェックリスト各項目を審査し、`[critical]` タグの有無から `is_critical` を判定して記録する。
+2. **[critical] 2段階合否判定** (ADR-019):
+   - `[critical]` 項目が **全て PASS** → `APPROVED`。non-critical FAIL は `unresolved_issues` に記録する。
+   - `[critical]` 項目が **1つでも FAIL** → `REJECTED`（差し戻し理由を明記して再生成）。non-critical FAIL は差し戻し理由に含めない。
+3. 差し戻し → 議長が critical 項目を revisit → 再検収
 4. 差し戻し `max_rejections` 超過 → フォールバック戦略を実行
 
+> **`[critical]` タグなしのチェックリスト**: 全項目を均等に扱う従来動作にフォールバックする（後退しない）。
 > **収束検出・max_rounds 到達による終了時の検収基準 (緩和)**: 合意判定条件を満たしていない場合でも、`unresolved_issues` に対立点が明示されていれば `APPROVED` とする。
 
 #### フォールバック戦略 (max_rejections 到達時)
@@ -224,8 +229,9 @@ Agent(
 ### Phase 3 検証: 個別検収
 
 1. **具体性チェック**: 合意案が抽象的な方針ではなく、実行可能な具体的提案か
-2. **全員カバーチェック**: チェックリストの全項目に対する回答が含まれているか
-3. **対立解決チェック**: 残存する対立点が明示されているか（隠蔽されていないか）
+2. **[critical] カバーチェック**: `[critical]` 項目が全て PASS か（ADR-019 2段階合否判定）
+3. **全員カバーチェック**: チェックリストの全項目に対する回答が含まれているか（non-critical FAIL は `unresolved_issues` に記録）
+4. **対立解決チェック**: 残存する対立点が明示されているか（隠蔽されていないか）
 
 ### Phase 4 検証: 全体統合
 
@@ -252,11 +258,11 @@ call-parliament を呼び出したエージェント（通常 easy-agent の Del
 
 | ステータス | 意味 | 呼び出し元が取るべきアクション |
 | :--- | :--- | :--- |
-| `AGREED` | 全メンバーが APPROVE または軽微な REVISE で議論が完了 | チェックリスト全項目 PASS を確認した上で当該議題を `APPROVED` とし、Phase 4 の集約待ちへ進める |
+| `AGREED` | 全メンバーが APPROVE または軽微な REVISE で議論が完了 | `checklist_validation` の **`[critical]` 項目（`is_critical: true`）が全 PASS** であることを確認した上で当該議題を `APPROVED` とし、Phase 4 の集約待ちへ進める。`is_critical: false` の FAIL は `APPROVED` を妨げず `unresolved_issues` として後続フェーズへ引き継ぐ（ADR-019）。 |
 | `CONVERGED` | `convergence_threshold` 連続で新規論点なし（議論停滞による収束） | `unresolved_issues` に対立点が明示されていることを確認の上 `APPROVED` 扱い。残存リスクは `residual_risks` として後続フェーズへ引き継ぐ |
 | `MAX_ROUNDS` | `max_rounds` 到達で強制終了（部分合意） | 残存課題を明記した最善合意案を採用して `APPROVED` 扱いとし、**ユーザーに残存課題と選択肢（続行 / 要件緩和 / Advisory 追加収集）を通知する**。自動で次フェーズへ進めない |
 
-> **AGREED と CONVERGED の違い**: `AGREED` はチェックリストを満たした能動的合意。`CONVERGED` は新規論点が枯渇したことによる受動的合意（残存対立を明示した上での「現時点の最善案」）。後者は `unresolved_issues` の有無を必ず確認すること。
+> **AGREED と CONVERGED の違い**: `AGREED` はチェックリストの `[critical]` 項目を満たした能動的合意。`CONVERGED` は新規論点が枯渇したことによる受動的合意（残存対立を明示した上での「現時点の最善案」）。後者は `unresolved_issues` の有無を必ず確認すること。
 
 ### オーケストレーター集約レベルの返却ステータス
 

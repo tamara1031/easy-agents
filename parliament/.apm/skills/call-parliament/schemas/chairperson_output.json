@@ -159,6 +159,10 @@
                             "FAIL"
                         ]
                     },
+                    "is_critical": {
+                        "type": "boolean",
+                        "description": "チェックリスト項目に [critical] タグが付いていたか。FAIL かつ true の場合はオーケストレーターが REJECTED 扱いとする。FAIL かつ false/省略の場合は unresolved_issues へ記録してもよい（ADR-019）。"
+                    },
                     "detail": {
                         "type": "string"
                     }
