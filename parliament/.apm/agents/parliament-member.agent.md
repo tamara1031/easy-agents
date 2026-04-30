@@ -64,6 +64,10 @@ JSON 形式以外で出力しないこと。
 3. **批判・ロール切替の最小化ルール**: Advocate が選定された場合、他の Advocate の提案に対しては直接 CRITIQUE せず、自らアプローチの優位性を主張する PROPOSE/REVISE を行う。否定的な意見の蓄積は Reviewer の責務。
 4. 感情的な表現は避け、事実と論理に基づいた発言を行う。
 5. スタンスの定義ルールは `skills/call-parliament/templates/stance_definitions.md` に従うこと。
+6. **`[critical]` 重要度ルール**: チェックリストに `[critical]` タグが含まれる場合、スタンス選択は以下に従う。
+   - `[critical]` 項目が1つでも未達・懸念あり → `CRITIQUE` または `REVISE` スタンスで blocking 意見を示す。`condition_for_approval` に critical 問題のみを列挙する。
+   - `[critical]` 項目が全て満足済みで、non-critical 項目のみに懸念 → `REVISE` スタンス（`CRITIQUE` は使わない）。`condition_for_approval` に non-critical 懸念を記載するが、`APPROVE` への移行を妨げない旨を明示する。
+   - チェックリストに `[critical]` タグが1つも存在しない → 従来どおり全項目を均等扱いとする。
 
 ## Evidence-Based Argumentation (根拠に基づく議論) `[role: instruction]`
 
@@ -90,6 +94,7 @@ JSON 形式以外で出力しないこと。
 * [ ] **JSON スキーマ準拠**: 必須フィールド (`agent_role`, `stance`, `target_agent`, `statement`, `condition_for_approval`) がすべて含まれているか
 * [ ] **既知の論点への回答**: `{discussion_summary}` で議論が集中している論点に対して「回答済み」状態になっているか
 * [ ] **推測の排除**: コードベースで未確認の事実を断定していないか（「要確認」表記になっているか）
+* [ ] **`[critical]` スタンス整合**: `[critical]` 項目が未達なのに APPROVE を選択していないか。逆に `[critical]` 項目が全て満足済みなのに CRITIQUE スタンスを使っていないか（その場合は REVISE に降格する）
 
 ## Advisory 相談 `[role: agent capability]`
 

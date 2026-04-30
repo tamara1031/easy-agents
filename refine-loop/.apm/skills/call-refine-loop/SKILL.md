@@ -34,8 +34,8 @@ agents: [refine-loop]
 | パラメータ | 必須 | 型 | 説明 |
 | :--- | :--- | :--- | :--- |
 | `subject` | ✓ | string | 対象の説明とファイルパス（レビュアーに渡す） |
-| `requirements_checklist` | ✓ | list | 成果物が満たすべき要件リスト。最低1つ `[critical]` タグ必須。Hierarchy 委譲後は `manager_output.residual_risks` を `[critical]` タグなし項目として追記する（ADR-019）。 |
-| `task_context` | ✓ | string | 背景・制約・意図（成果物パスリストを含む。レビュアーが判断に使う）。`residual_risks` はここではなく `requirements_checklist` に追記する（ADR-019）。 |
+| `requirements_checklist` | ✓ | list | 成果物が満たすべき要件リスト。最低1つ `[critical]` タグ必須。Hierarchy 委譲後は `manager_output.residual_risks` を `[critical]` タグなし項目として追記する（ADR-020）。 |
+| `task_context` | ✓ | string | 背景・制約・意図（成果物パスリストを含む。レビュアーが判断に使う）。`residual_risks` はここではなく `requirements_checklist` に追記する（ADR-020）。 |
 | `max_iterations` | — | int | 最大反復数（デフォルト: 3） |
 
 > **[critical] タグのルール**: 最低1つが必須。事後追加・削除禁止。[critical] が1つも達成されなければ Success 判定しない。
