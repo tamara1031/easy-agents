@@ -354,13 +354,15 @@ agent(
     requirements_checklist:
       - "[critical] <必須要件>"
       - "<通常要件>"
-    task_context: "<背景・制約・意図>"
+      - "<residual_risks[N]>  # Hierarchy 委譲後: [critical] タグなしで追記 (ADR-020)"
+    task_context: "<背景・制約・意図（成果物パスリストを含む）>"
     max_iterations: 3
   """
 )
 ```
 
 > **いつ呼ぶか**: Verify フェーズ開始時に常に呼ぶ（REVISE ループの自己評価の代わり）。テスト実行は先に `execute` で行い、その結果を `task_context` に含めて渡す。
+> **Hierarchy 委譲後の `residual_risks` 引き継ぎ (ADR-020)**: call-hierarchy が返した `manager_output.residual_risks`（non-critical FAIL の記録）は `task_context` ではなく `requirements_checklist` へ `[critical]` タグなし項目として追記すること。これにより refine-loop の reviewer が各リスクを明示的に PASS/FAIL 判定できる。
 > **agent ツールが利用不可の場合**: REVISE ループ（最大2回）にフォールバックし、ユーザーに `[refine-loop 不可: agent ツールなし。自己評価モードで継続します]` と通知する。
 
 ---

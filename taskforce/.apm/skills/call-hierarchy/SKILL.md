@@ -307,7 +307,7 @@ call-hierarchy を呼び出したエージェント（通常 easy-agent の Impl
 
 | ステータス | 根本原因 | 呼び出し元が取るべきアクション |
 | :--- | :--- | :--- |
-| 全タスク APPROVED | Phase 3 で全タスクがチェックリストを充足し、Phase 4 で `grand_summary` が生成された | `Verify` フェーズへ進む。成果物リスト（各タスクの `deliverable_path`）と `residual_risks` を refine-loop の `task_context` に含めて引き継ぐ |
+| 全タスク APPROVED | Phase 3 で全タスクがチェックリストを充足し、Phase 4 で `grand_summary` が生成された | `Verify` フェーズへ進む。成果物リスト（各タスクの `deliverable_path`）を refine-loop の `task_context` に含める。**`residual_risks` は refine-loop の `requirements_checklist` へ non-critical 項目（`[critical]` タグなし）として追記して引き継ぐ**（ADR-020）。 |
 | `max_rejections` 超過 | 1つ以上のタスクで差し戻し回数が上限を超過（チェックリスト未達のまま） | call-hierarchy の **フォールバック戦略 (Phase 3)** で提示される選択肢（手動介入 / 差し戻しリセット / 別アプローチで再試行）を **そのままユーザーへ転送** する。ユーザー選択後に再実行、または Phase Gate で STOP |
 | タスク `ERROR` の連鎖 | 単一タスクの `ERROR` が `depends_on` で連結されたタスクへ波及 | 影響範囲（依存先タスク群）を特定して未着手のものは `TODO` のまま保留し、進捗レポートにまとめてユーザーへ報告。**自動継続せずユーザー判断を仰ぐ**（`status` enum を逸脱した独自ラベルは導入しない） |
 | `DISPATCH_FAILURE` | `hierarchy-manager` サブエージェントの起動失敗・タイムアウト・`agent` / `task` / `runSubagent` ツール不可 | **Skip-and-Report**: 当該タスクを `ERROR (error_reason: "dispatch failure")` 扱いでスキップし、`depends_on` で連結されたタスクを `TODO` で保留する。全タスクが `DISPATCH_FAILURE` になった場合（= `agent` ツール全体不可）は Phase Gate で STOP（ADR-015）。 |
