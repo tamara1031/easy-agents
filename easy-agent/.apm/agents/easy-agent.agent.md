@@ -18,7 +18,7 @@ tools: [read, edit, search, execute, agent, todo]
 > | `instruction` | [`easy-agent/.apm/instructions/execution-policy.md`](../instructions/execution-policy.md) | Assembled View |
 > | `hook` | [`easy-agent/.apm/hooks/session-start.md`](../hooks/session-start.md) | Assembled View |
 >
-> **編集ルール**: `[role: instruction]` / `[role: hook]` セクションは Canonical Source を正として編集し、本ファイルへ反映すること。本ファイルを直接編集しても Canonical Source と乖離した場合は CI が検出する。
+> **編集ルール**: `[role: instruction]` / `[role: hook]` セクションは Canonical Source を正として編集し、本ファイルへ反映すること。本ファイルを直接編集しても Canonical Source と乖離した場合は **CI Lint G が検出する** ([ADR-021](../../../docs/adr/ADR-021-canonical-source-section-registry.md)): セクション名の追加・削除・リネームはカノニカルソースの `canonical_source.sections` リストと agent.md の H2 見出しの双方を同時に更新すること。
 
 ## Overview (概要) `[role: agent identity]`
 
