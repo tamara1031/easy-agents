@@ -102,13 +102,22 @@ tools: [read, search, agent]
 
 > **Early Termination Flow**: 議長は、対立が残存していても対立点が明示されていれば `APPROVED` とする（`skills/call-parliament/skill.md` 参照）。議論の停滞は「未解決課題」として成果物に追記して終了する。
 
+#### `[critical]` 重要度による二段階収束判定
+
+チェックリストに `[critical]` タグが存在する場合、以下の二段階判定を適用する：
+
+1. **`[critical]` 項目の達成確認を最優先**: いずれかの `[critical]` 項目が FAIL または未解決のまま `CRITIQUE` スタンスのメンバーが残っている場合、AGREED とみなさない。
+2. **non-critical 項目の FAIL は AGREED を妨げない**: `[critical]` 項目が全員 satisfied であれば、non-critical 項目への REVISE スタンスのみが残っていても `AGREED` を宣言できる。未解決の non-critical 項目は `residual_risks` に記録してオーケストレーターへ引き継ぐ。
+3. **差し戻しカウント（max_rejections）の対象**: `[critical]` 項目の FAIL に起因する CRITIQUE スタンスのみを差し戻しとしてカウントする。non-critical 項目への REVISE スタンスはカウントしない。
+4. **`[critical]` タグが存在しないチェックリスト**: 従来どおり全項目を均等扱いとする（後退しない）。
+
 ### 5. 合意案と提出 (SUBMIT_TO_ORCHESTRATOR)
 
 合意案が形成されたら、議題を終了し、以下をまとめてオーケストレーターに返却する:
 
 - **最終合意案の内容**
-- **チェックリスト各項目の達成証跡**
-- **未解決事項と残存リスク**
+- **チェックリスト各項目の達成証跡**（`checklist_validation` の各エントリに `is_critical` を付与する。`[critical]` タグ付き項目は `is_critical: true`、タグなし項目は `is_critical: false`）
+- **未解決事項と残存リスク**（`[critical]` 項目の未解決 → `unresolved_issues`、non-critical の未解決 → `residual_risks` に分類する）
 - **議論の要約** (合意に至るプロセス)
 - **最終ステータス**: `AGREED` / `CONVERGED` / `MAX_ROUNDS` (上限到達)
 
