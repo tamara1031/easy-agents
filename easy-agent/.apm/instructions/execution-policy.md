@@ -1,10 +1,24 @@
+---
+canonical_source:
+  role: instruction
+  assembles_into: agents/easy-agent.agent.md
+  sections:
+    - "Pre-processing Guards (前処理ガード)"
+    - "Confirmation Gates (確認ゲート)"
+    - "3-Layer Conflict Resolution (3層紛争解決)"
+    - "出荷品質の活用"
+    - "過剰エンジニアリング防止 (Overengineering 対策)"
+    - "Context Window Management (コンテキスト管理)"
+    - "Constraints (制約)"
+---
+
 # Execution Policy (実行ポリシー)
 
-> **Canonical Source** for `[role: instruction]` — `easy-agent/.apm/instructions/execution-policy.md`
+> **Canonical Source** for `[role: instruction]` — `easy-agent/.apm/instructions/execution-policy.md`  ([ADR-021](../../../docs/adr/ADR-021-canonical-source-section-registry.md))
 > `easy-agent.agent.md` の以下の7セクションは本ファイルの Assembled View:
 > Pre-processing Guards / Confirmation Gates / 3-Layer Conflict Resolution /
 > 出荷品質の活用 / 過剰エンジニアリング防止 / Context Window Management / Constraints
-> 編集は必ず本ファイルを正として行い、agent.md へ反映すること。
+> 編集は必ず本ファイルを正として行い、agent.md へ反映すること。CI (Lint G) がセクション存在を双方向検証する。
 
 ---
 

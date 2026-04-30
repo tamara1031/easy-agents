@@ -1,8 +1,16 @@
+---
+canonical_source:
+  role: hook
+  assembles_into: agents/easy-agent.agent.md
+  sections:
+    - "Auto-Memory Protocol (自動記憶保存プロトコル)"
+---
+
 # Auto-Memory Protocol (自動記憶保存プロトコル)
 
-> **Canonical Source** for `[role: hook]` — `easy-agent/.apm/hooks/session-start.md`
+> **Canonical Source** for `[role: hook]` — `easy-agent/.apm/hooks/session-start.md`  ([ADR-021](../../../docs/adr/ADR-021-canonical-source-section-registry.md))
 > `easy-agent.agent.md` の "Auto-Memory Protocol" セクションは本ファイルの Assembled View。
-> 編集は必ず本ファイルを正として行い、agent.md へ反映すること。
+> 編集は必ず本ファイルを正として行い、agent.md へ反映すること。CI (Lint G) がセクション存在を双方向検証する。
 
 会話から得た情報を memoir の **`long-term-memory` スキル**経由で ChromaDB に保存し、将来のセッションでユーザーの役割・好み・プロジェクト状況をすぐに把握できるようにする。スクリプトへの直接呼び出しは行わず、常にスキルのインターフェースを通じて操作する。
 
