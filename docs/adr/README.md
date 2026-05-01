@@ -26,3 +26,4 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-018](./ADR-018-critical-severity-hierarchy.md) | [critical] Severity Tagging for Hierarchy Quality Gates (Hierarchy への二段階収束モデル統一) | Accepted |
 | [ADR-019](./ADR-019-parliament-critical-severity.md) | [critical] Severity Tagging for Parliament Quality Gates (Parliament への二段階収束モデル統一) | Accepted |
 | [ADR-020](./ADR-020-residual-risks-checklist-bridge.md) | Residual Risks Checklist Bridge (Implement → Verify フェーズ間 non-critical 継承) | Accepted |
+| [ADR-021](./ADR-021-canonical-source-section-registry.md) | Canonical Source Section Registry Protocol (アセンブルビュー双方向 CI 保護) | Accepted |

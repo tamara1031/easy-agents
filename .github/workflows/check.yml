@@ -358,6 +358,106 @@ jobs:
           done
           [ "$fail" -eq 0 ]
 
+      - name: Lint canonical source section registry (ADR-021 Lint G)
+        run: |
+          # Verifies the bidirectional section coverage declared in each
+          # canonical source file's YAML frontmatter (ADR-021).
+          #
+          # Forward check (canonical → assembled view):
+          #   For each .apm/instructions/*.md and .apm/hooks/*.md that carries a
+          #   `canonical_source.sections` list, every section name in that list
+          #   must appear as an H2 heading in the `assembles_into` target file.
+          #
+          # Reverse check (assembled view → canonical):
+          #   For every `## ... [role: instruction]` or `## ... [role: hook]` H2
+          #   in an Assembled View agent file, the normalised heading (minus the
+          #   backtick [role:...] suffix) must be covered by at least one
+          #   canonical source's sections list.
+          #
+          # Only files with `canonical_source:` frontmatter are in scope; packages
+          #   without it are silently skipped (ADR-012 scopes this to easy-agent).
+          python3 - <<'PY'
+          import re, sys, pathlib
+          try:
+              import yaml
+          except ImportError:
+              import subprocess, sys as _sys
+              subprocess.run([_sys.executable, "-m", "pip", "install", "-q", "pyyaml"], check=True)
+              import yaml
+
+          ROLE_H2_RE = re.compile(r"^## (.+?) `\[role: (instruction|hook)\]`", re.MULTILINE)
+          fail = False
+          all_covered_per_target: dict[str, set] = {}
+
+          canonical_files = sorted(
+              list(pathlib.Path(".").glob("*/.apm/instructions/*.md")) +
+              list(pathlib.Path(".").glob("*/.apm/hooks/*.md"))
+          )
+
+          for cf in canonical_files:
+              text = cf.read_text()
+              if not text.startswith("---"):
+                  continue
+              try:
+                  end = text.index("---", 3)
+              except ValueError:
+                  continue
+              fm = yaml.safe_load(text[3:end]) or {}
+              cs = fm.get("canonical_source")
+              if not cs or "sections" not in cs:
+                  continue
+
+              pkg_apm = cf.parent.parent          # e.g. easy-agent/.apm
+              target_path = pkg_apm / cs["assembles_into"]
+              sections = cs["sections"]
+
+              if not target_path.exists():
+                  print(f"::error file={cf}::assembles_into '{cs['assembles_into']}' not found at {target_path}")
+                  fail = True
+                  continue
+
+              target_text = target_path.read_text()
+              target_key = str(target_path)
+              covered = all_covered_per_target.setdefault(target_key, set())
+
+              for section in sections:
+                  pattern = rf"^## {re.escape(section)}"
+                  if re.search(pattern, target_text, re.MULTILINE):
+                      print(f"  ✓ {cf.name} → '{section}' found in {target_path.name}")
+                      covered.add(section)
+                  else:
+                      print(
+                          f"::error file={cf}::section '{section}' listed in canonical_source.sections "
+                          f"but not found as H2 heading in {target_path} (ADR-021 Lint G forward check)"
+                      )
+                      fail = True
+
+          # Reverse check: every [role: instruction/hook] H2 in assembled-view
+          # agent files must be covered by at least one canonical source.
+          for agent_path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              if not re.search(r"Assembled View", agent_path.read_text()):
+                  continue
+              agent_text = agent_path.read_text()
+              agent_key = str(agent_path)
+              covered = all_covered_per_target.get(agent_key, set())
+              for m in ROLE_H2_RE.finditer(agent_text):
+                  heading = m.group(1).strip()
+                  if heading not in covered:
+                      print(
+                          f"::error file={agent_path}::H2 '{heading}' has [role: {m.group(2)}] "
+                          f"but is not covered by any canonical source's sections list "
+                          f"(ADR-021 Lint G reverse check) — add it to the appropriate "
+                          f".apm/instructions/ or .apm/hooks/ frontmatter"
+                      )
+                      fail = True
+                  else:
+                      print(f"  ✓ {agent_path.name}: '[role: {m.group(2)}]' H2 '{heading}' covered")
+
+          if not fail:
+              print("  ✓ All canonical source section registries are consistent (ADR-021)")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Lint hook event vocabulary (ADR-011 Lint D)
         run: |
           # Every hook event name cited in .apm/hooks/*.md files and in
