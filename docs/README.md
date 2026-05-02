@@ -72,3 +72,4 @@ easy-agent (統合オーケストレーター)
    - `Lint Caller Response Contract` ステップが新スキルを発見し、必須見出しの存在を確認
    - `apm install` が成功し `.claude/skills/` にビルド成果物が生成される
 7. **必要に応じて ADR を追加**: 新パターンが既存 ADR と矛盾する場合は新規 ADR で記録し、`docs/adr/README.md` の索引にも追加（CI の `Lint ADR index completeness` がカバー）。
+
