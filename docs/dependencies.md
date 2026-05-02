@@ -106,3 +106,12 @@ easy-agent (Verify フェーズ)
 |---|---|
 | memoir | Docker, ChromaDB 0.6.3, chromadb Python パッケージ, ONNX runtime |
 | その他全モジュール | なし (純粋な Markdown / JSON 定義) |
+
+
+## 依存変更時の運用チェックリスト
+
+APM 宣言依存（`apm.yml` / `apm.lock.yaml`）に差分が入る変更をマージした場合は、次を最低限実施する。
+
+- `apm install` を再実行し、依存解決結果が再現可能であることを確認する。
+- `git diff --check` で競合マーカーやフォーマット崩れがないことを確認する。
+- `easy-agent/README.md` の「前提条件」表と宣言依存の記述が一致していることを確認する。
