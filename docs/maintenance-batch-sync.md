@@ -26,6 +26,13 @@
 2. テーマを 2〜4 ステップに分割する。
 3. 各ステップに要件チェックリストを定義し、最低1件の `[critical]` を含める。
 
+要件チェックリストは、必ず「検証コマンド」とセットで書く。
+
+| Step | Requirement | Priority | Verification |
+|---|---|---|---|
+| Step 1 | 例: runbook が pre-flight〜handoff を欠落なく記述している | [critical] | `rg "Pre-flight Sync|Push & Handoff" docs/maintenance-batch-sync.md` |
+| Step 2 | 例: 実行ログテンプレートが再利用できる | normal | `test -f docs/templates/batch-run-log-template.md` |
+
 ### 3) Empirical Loop
 
 各ステップで以下を繰り返す:
@@ -42,6 +49,23 @@
 - `[critical]` を満たし、テストが成功
 
 収束したステップは Conventional Commits で個別コミットする。
+
+#### Reflection の最小出力フォーマット
+
+```md
+### Reflection (Step N)
+- Trace
+  - Understanding:
+  - Planning:
+  - Execution:
+  - Formatting:
+- Issue / Cause / General Fix Rule
+  - Issue:
+  - Cause:
+  - General Fix Rule:
+- Discretionary fill-ins
+  - None / <内容>
+```
 
 ### 4) Just-in-Time Sync
 
@@ -64,27 +88,8 @@
 - 同一ステップで 3 イテレーション以上収束しない場合はロールバックする。
 - マージ意図が不明な競合は `git merge --abort` し、人間に判断を依頼する。
 
-## 最低限の実行ログテンプレート
+## 実行ログ運用
 
-```md
-## Batch Run Log (YYYY-MM-DD)
-- Theme:
-- Step list:
-  - Step 1:
-    - [critical]
-    - [ ] check 1
-  - Step 2:
-    - [critical]
-
-### Validation
-- command:
-- result:
-
-### Failure pattern ledger
-- Issue:
-- Cause:
-- General Fix Rule:
-
-### Reviewer focus
-- discretionary fill-ins:
-```
+- バッチごとに専用ログを1つ作る（例: `docs/logs/batch-run-YYYY-MM-DD.md`）。
+- ログはテンプレート `docs/templates/batch-run-log-template.md` から作成する。
+- 実行したコマンドは成功/失敗に関わらず記録し、スキップ理由を明記する。
