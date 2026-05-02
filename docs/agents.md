@@ -19,6 +19,10 @@
 
 ---
 
+> **運用補助**: 定期バッチで main 同期から Epic 収束まで実施する際は、[batch-epic-execution.md](./batch-epic-execution.md) の手順に従う。
+
+---
+
 ## easy-agent
 
 **パス**: `easy-agent/.apm/agents/easy-agent.agent.md`
