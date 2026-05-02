@@ -13,7 +13,6 @@ easy-agents/
 │   ├── agents.md
 │   ├── skills.md
 │   ├── dependencies.md
-│   ├── maintenance-batch-sync.md       # 定期バッチ運用 Runbook
 │   └── adr/                            # Architecture Decision Records
 ├── easy-agent/                         # コアオーケストレーター
 ├── advisor/                            # 戦略アドバイザー (Opus)
