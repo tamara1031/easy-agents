@@ -968,6 +968,49 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint residual_risks checklist bridge documentation (ADR-020 Lint M)
+        run: |
+          # ADR-020 mandates that Hierarchy's residual_risks are bridged to refine-loop's
+          # requirements_checklist (not task_context) so that non-critical Implement failures
+          # receive explicit PASS/FAIL verdicts in the Verify phase.
+          # Three files must document this bridge; this lint verifies each in turn.
+          fail=0
+
+          # Check 1: call-hierarchy SKILL.md — 'requirements_checklist' cited as
+          #   the destination for residual_risks in the Caller Response Contract.
+          HIER="taskforce/.apm/skills/call-hierarchy/SKILL.md"
+          if ! grep -q 'requirements_checklist' "$HIER"; then
+            echo "::error file=$HIER::does not mention 'requirements_checklist' — " \
+                 "document the ADR-020 bridge in the Caller Response Contract (ADR-020 Lint M)"
+            fail=1
+          else
+            echo "  ✓ $HIER: 'requirements_checklist' present (ADR-020)"
+          fi
+
+          # Check 2: call-refine-loop SKILL.md — references ADR-020 or the
+          #   residual_risks / requirements_checklist pairing in parameter docs.
+          REFINE="refine-loop/.apm/skills/call-refine-loop/SKILL.md"
+          if ! grep -qE 'ADR-020|residual_risks' "$REFINE"; then
+            echo "::error file=$REFINE::does not reference 'ADR-020' or 'residual_risks' — " \
+                 "document the bridge in the requirements_checklist parameter description (ADR-020 Lint M)"
+            fail=1
+          else
+            echo "  ✓ $REFINE: ADR-020 bridge documented (ADR-020)"
+          fi
+
+          # Check 3: easy-agent.agent.md — mentions ADR-020 in the refine-loop
+          #   invocation template to guide operators building the checklist.
+          AGENT="easy-agent/.apm/agents/easy-agent.agent.md"
+          if ! grep -q 'ADR-020' "$AGENT"; then
+            echo "::error file=$AGENT::does not mention 'ADR-020' — " \
+                 "add bridge annotation to the call-refine-loop invocation template (ADR-020 Lint M)"
+            fail=1
+          else
+            echo "  ✓ $AGENT: ADR-020 mentioned (ADR-020)"
+          fi
+
+          [ "$fail" -eq 0 ]
+
       - name: Install dependencies
         run: apm install --no-policy
 
