@@ -244,6 +244,85 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint is_critical field in quality gate schemas (ADR-018/019 Lint K)
+        run: |
+          # ADR-018 extended Hierarchy schemas (member_output.json, manager_output.json)
+          # with is_critical: boolean to mark checklist items as blocking vs. best-effort.
+          # ADR-019 extended Parliament schema (chairperson_output.json) identically.
+          # This lint verifies the field is present with type boolean in each schema,
+          # preventing silent regression if the field is accidentally removed.
+          python3 - <<'PY'
+          import json, sys
+
+          CHECKS = [
+              {
+                  "schema":  "taskforce/.apm/skills/call-hierarchy/schemas/member_output.json",
+                  "pointer": ["properties", "checklist_coverage", "additionalProperties", "properties"],
+                  "label":   "member_output checklist_coverage",
+                  "adr":     "ADR-018",
+              },
+              {
+                  "schema":  "taskforce/.apm/skills/call-hierarchy/schemas/manager_output.json",
+                  "pointer": ["properties", "checklist_validation", "items", "properties"],
+                  "label":   "manager_output checklist_validation",
+                  "adr":     "ADR-018",
+              },
+              {
+                  "schema":  "parliament/.apm/skills/call-parliament/schemas/chairperson_output.json",
+                  "pointer": ["properties", "checklist_validation", "additionalProperties", "properties"],
+                  "label":   "chairperson_output checklist_validation",
+                  "adr":     "ADR-019",
+              },
+          ]
+
+          def resolve_pointer(obj, keys):
+              for k in keys:
+                  if isinstance(obj, dict):
+                      obj = obj.get(k)
+                      if obj is None:
+                          return None
+                  else:
+                      return None
+              return obj
+
+          fail = False
+          for chk in CHECKS:
+              try:
+                  schema = json.load(open(chk["schema"]))
+              except FileNotFoundError:
+                  print(f"::error file={chk['schema']}::schema file not found")
+                  fail = True
+                  continue
+
+              props = resolve_pointer(schema, chk["pointer"])
+              if not isinstance(props, dict):
+                  print(
+                      f"::error file={chk['schema']}::{chk['label']}: cannot resolve "
+                      f"properties dict at {'.'.join(chk['pointer'])} ({chk['adr']} Lint K)"
+                  )
+                  fail = True
+                  continue
+
+              if "is_critical" not in props:
+                  print(
+                      f"::error file={chk['schema']}::{chk['label']}: missing 'is_critical' "
+                      f"property — add {{\"type\": \"boolean\"}} entry ({chk['adr']} Lint K)"
+                  )
+                  fail = True
+              elif props["is_critical"].get("type") != "boolean":
+                  print(
+                      f"::error file={chk['schema']}::{chk['label']}: 'is_critical' must have "
+                      f"type 'boolean', got '{props['is_critical'].get('type')}' ({chk['adr']} Lint K)"
+                  )
+                  fail = True
+              else:
+                  print(
+                      f"  ✓ {chk['schema']}: {chk['label']}.is_critical: boolean present ({chk['adr']})"
+                  )
+
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Lint role taxonomy tag values (ADR-010 / ADR-011)
         run: |
           # Every ``[role: <value>]`` tag applied to a heading in
