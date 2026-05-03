@@ -1,6 +1,7 @@
 ---
 name: easy-agent
 description: "ユニバーサルサブエージェント。ユーザーの要求を3軸（曖昧度×TaskScale×TaskType）で分析し最適な Phase Pipeline を構成。Phase Gate Protocol で call-advisor（相談）やエスカレーション（設計方針・成果物（設計）の委譲）を使い分ける統一エントリーポイント。"
+model: "claude-sonnet-4-6"
 user-invocable: true
 tools: [read, edit, search, execute, agent, todo]
 agents: [hierarchy-manager, parliament-chairperson, advisor]

@@ -1,6 +1,3 @@
-動画「IMG_5744.mov」のターミナル画面に表示されている `manager_output.json` の内容を一言一句たがわず書き起こしました。
-
-```json
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "ManagerOutput",
@@ -135,12 +132,18 @@
         "additional_persona": {
             "type": "object",
             "required": [
+                "specialty",
                 "background",
                 "reason"
             ],
             "properties": {
+                "specialty": {
+                    "type": "string",
+                    "description": "専門分野"
+                },
                 "background": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "背景設定"
                 },
                 "reason": {
                     "type": "string",
@@ -150,4 +153,3 @@
         }
     }
 }
-```
