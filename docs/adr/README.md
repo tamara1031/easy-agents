@@ -28,3 +28,4 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-020](./ADR-020-residual-risks-checklist-bridge.md) | Residual Risks Checklist Bridge (Implement → Verify フェーズ間 non-critical 継承) | Accepted |
 | [ADR-021](./ADR-021-canonical-source-section-registry.md) | Canonical Source Section Registry Protocol (アセンブルビュー双方向 CI 保護) | Accepted |
 | [ADR-022](./ADR-022-agent-invocation-name-coverage.md) | Agent Invocation Name Coverage (全呼び出しパターンのエージェント名検証) | Accepted |
+| [ADR-023](./ADR-023-critical-quality-model-ci-coverage.md) | CI Lint Coverage for [critical] Quality Model and Residual Risks Bridge (ADR-018/019/020 退行保護) | Accepted |
