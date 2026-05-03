@@ -1,0 +1,142 @@
+name: Release - Prepare
+
+# Trunk-based release entry point.
+#
+# Click "Run workflow" on main with a bump type (or an explicit version).
+# This workflow:
+#   1. computes the next semver from the current root apm.yml `version:`
+#   2. rewrites `version:` in the root apm.yml and every <package>/apm.yml
+#   3. commits the bump to main as `chore(release): vX.Y.Z`
+#   4. creates and pushes the `vX.Y.Z` tag
+#
+# The tag push then triggers `release.yml`, which runs `apm pack` and
+# publishes the GitHub Release with the built artifacts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Semver bump (ignored if an explicit version is given)'
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      version:
+        description: 'Explicit version like 1.2.3 (overrides bump if set)'
+        required: false
+        type: string
+
+permissions:
+  contents: write   # commit + tag push to main
+  actions: write    # dispatch the Release workflow on the new tag
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute new version
+        id: ver
+        env:
+          BUMP: ${{ inputs.bump }}
+          EXPLICIT: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          current=$(awk '/^version:/{print $2; exit}' apm.yml)
+          if [ -z "$current" ]; then
+            echo "::error file=apm.yml::no 'version:' field found"
+            exit 1
+          fi
+          if [ -n "$EXPLICIT" ]; then
+            new="$EXPLICIT"
+          else
+            IFS=. read -r MAJ MIN PAT <<<"$current"
+            case "$BUMP" in
+              major) MAJ=$((MAJ+1)); MIN=0; PAT=0 ;;
+              minor) MIN=$((MIN+1)); PAT=0 ;;
+              patch) PAT=$((PAT+1)) ;;
+              *) echo "::error::unknown bump type '$BUMP'"; exit 1 ;;
+            esac
+            new="$MAJ.$MIN.$PAT"
+          fi
+          if ! [[ "$new" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::invalid version '$new' (need MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "new=$new"         >> "$GITHUB_OUTPUT"
+          echo "tag=v$new"        >> "$GITHUB_OUTPUT"
+          echo "  $current -> $new (tag v$new)"
+
+      - name: Verify tag does not already exist
+        env:
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --quiet
+          if git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::tag $TAG already exists"
+            exit 1
+          fi
+
+      - name: Bump version in every apm.yml
+        env:
+          NEW: ${{ steps.ver.outputs.new }}
+        run: |
+          set -euo pipefail
+          for f in apm.yml */apm.yml; do
+            [ -f "$f" ] || continue
+            sed -i -E "s/^version: .*/version: $NEW/" "$f"
+            echo "  $f -> $NEW"
+          done
+          git --no-pager diff --stat
+
+      - name: Commit, tag, push
+        env:
+          NEW: ${{ steps.ver.outputs.new }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apm.yml */apm.yml
+          git commit -m "chore(release): $TAG"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "$TAG"
+
+      - name: Trigger Release build
+        # Tag pushes made with the default GITHUB_TOKEN do NOT fan out to other
+        # workflows (GitHub security restriction). workflow_dispatch is one of
+        # the documented exceptions, so we explicitly dispatch the Release
+        # workflow on the freshly-pushed tag ref to run the build & publish.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh workflow run release.yml --ref "$TAG"
+          echo "Dispatched Release workflow on $TAG"
+
+      - name: Summary
+        env:
+          CUR: ${{ steps.ver.outputs.current }}
+          NEW: ${{ steps.ver.outputs.new }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          {
+            echo "## Release prepared"
+            echo
+            echo "| from | to | tag |"
+            echo "|------|----|-----|"
+            echo "| \`$CUR\` | \`$NEW\` | \`$TAG\` |"
+            echo
+            echo "Tag \`$TAG\` was pushed — the **Release** workflow now builds and publishes the artifacts."
+          } >> "$GITHUB_STEP_SUMMARY"

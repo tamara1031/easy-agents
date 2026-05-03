@@ -1,0 +1,1018 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  APM_VERSION: "0.9.2"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install APM
+        run: |
+          curl -fsSL "https://github.com/microsoft/apm/releases/download/v${APM_VERSION}/apm-linux-x86_64.tar.gz" \
+            | tar xz -C /tmp
+          sudo mv /tmp/apm-linux-x86_64 /usr/local/lib/apm
+          sudo ln -s /usr/local/lib/apm/apm /usr/local/bin/apm
+          apm --version
+
+      - name: Validate package structure
+        run: |
+          for pkg in easy-agent advisor parliament taskforce refine-loop memoir; do
+            [ -f "$pkg/apm.yml" ] || { echo "::error::$pkg/apm.yml missing"; exit 1; }
+            count=$(find "$pkg/.apm" -name '*.md' -o -name '*.json' -o -name '*.py' -o -name '*.yml' 2>/dev/null | wc -l)
+            [ "$count" -gt 0 ] || { echo "::error::$pkg/.apm has no source files"; exit 1; }
+            echo "  $pkg: $count source files"
+          done
+
+      - name: Lint CLAUDE.md package inventory
+        run: |
+          # CLAUDE.md is the project's onboarding document and must list
+          # every authored APM package (top-level dir with apm.yml). This
+          # catches the regression where a new package is added but the
+          # onboarding doc still claims the old roster (e.g. ADR-007 added
+          # refine-loop without updating CLAUDE.md's package list).
+          fail=0
+          for pkg_yml in */apm.yml; do
+            pkg=$(dirname "$pkg_yml")
+            if ! grep -qF "\`$pkg\`" CLAUDE.md; then
+              echo "::error file=CLAUDE.md::package '$pkg' is not referenced (expected backtick-quoted name)"
+              fail=1
+            else
+              echo "  ✓ $pkg"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - name: Lint Caller Response Contract (ADR-009 rule 1)
+        run: |
+          # Every call-*/SKILL.md must declare a Caller Response Contract section.
+          # Accepts either the English heading or the Japanese heading (呼び出し元の応答コントラクト).
+          fail=0
+          for skill in */.apm/skills/call-*/SKILL.md; do
+            if ! grep -qE '^##+ .*(Caller Response Contract|呼び出し元の応答コントラクト)' "$skill"; then
+              echo "::error file=$skill::missing 'Caller Response Contract' / '呼び出し元の応答コントラクト' heading (ADR-009 rule 1)"
+              fail=1
+            else
+              echo "  ✓ $skill"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - name: Lint ADR index completeness
+        run: |
+          # Every docs/adr/ADR-XXX-*.md file must be referenced from
+          # docs/adr/README.md. Catches the regression where a new ADR is
+          # created but never linked from the index (e.g. ADR-008).
+          fail=0
+          for adr in docs/adr/ADR-*.md; do
+            name=$(basename "$adr")
+            if ! grep -qF "$name" docs/adr/README.md; then
+              echo "::error file=docs/adr/README.md::$name is not referenced in the ADR index"
+              fail=1
+            else
+              echo "  ✓ $name"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - name: Lint stale 'smart-agent' references
+        run: |
+          # The orchestrator was renamed smart-agent → easy-agent. Fail
+          # if any package source or doc under tracked content contains
+          # the old name. Scans only authored source dirs (skips .github
+          # to avoid matching this lint's own text, vendored apm_modules,
+          # and docker compose files in memoir).
+          targets=(easy-agent advisor parliament taskforce refine-loop memoir docs CLAUDE.md)
+          if grep -rnE 'smart-agent|スマートエージェント' \
+               --include='*.md' --include='*.json' --include='*.yml' --include='*.yaml' \
+               --exclude-dir='apm_modules' --exclude-dir='docker' \
+               "${targets[@]}" ; then
+            echo "::error::stale 'smart-agent' / 'スマートエージェント' reference detected — rename to 'easy-agent'"
+            exit 1
+          fi
+          echo "  ✓ no stale 'smart-agent' references"
+
+      - name: Lint sister schema common base
+        run: |
+          # parliament and taskforce orchestrator_state.json declare each
+          # other as 姉妹スキーマ ('sister schemas') and share a common
+          # base of task/topic statuses. Extensions (e.g. taskforce-only
+          # SKIPPED) are allowed, but the common base must be present in
+          # both. This catches silent drift where one side adds a status
+          # the other forgets to mirror.
+          python3 - <<'PY'
+          import json, sys
+          BASE = {"TODO", "IN_PROGRESS", "IN_REVIEW", "APPROVED", "REJECTED", "ERROR"}
+          SISTERS = [
+              ("parliament/.apm/skills/call-parliament/schemas/orchestrator_state.json", "topics"),
+              ("taskforce/.apm/skills/call-hierarchy/schemas/orchestrator_state.json",   "tasks"),
+          ]
+          fail = False
+          for path, key in SISTERS:
+              with open(path) as f:
+                  schema = json.load(f)
+              enum = set(schema["properties"][key]["items"]["properties"]["status"]["enum"])
+              missing = BASE - enum
+              if missing:
+                  print(f"::error file={path}::{key}[].status enum missing common base {sorted(missing)}")
+                  fail = True
+              else:
+                  extras = sorted(enum - BASE)
+                  extra_note = f" (extras: {extras})" if extras else ""
+                  print(f"  ✓ {path}: {key}[].status base OK{extra_note}")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint subagent output schema status enum consistency (ADR-008/009/017)
+        run: |
+          # Verifies that the JSON schema status enums for subagent return values
+          # are consistent with the per-unit statuses documented in the corresponding
+          # call-*/SKILL.md Caller Response Contract sections. This is a bidirectional
+          # check: the schema must contain exactly the expected status values, and
+          # each of those values must appear in the SKILL.md contract.
+          #
+          # Covers all four call-* skills (ADR-017 extends to advisor and refine-loop):
+          #   parliament/chairperson_output.json  <->  call-parliament/SKILL.md
+          #   taskforce/manager_output.json       <->  call-hierarchy/SKILL.md
+          #   advisor/advisor_output.json         <->  call-advisor/SKILL.md
+          #   refine-loop/refine_loop_output.json <->  call-refine-loop/SKILL.md
+          #
+          # If a developer adds a new status to a schema without updating:
+          #   a) the expected_statuses set here (single source of truth in CI), or
+          #   b) the SKILL.md Caller Response Contract,
+          # this lint will fail and surface the drift.
+          python3 - <<'PY'
+          import json, sys
+
+          CHECKS = [
+              {
+                  "schema":   "parliament/.apm/skills/call-parliament/schemas/chairperson_output.json",
+                  "skill":    "parliament/.apm/skills/call-parliament/SKILL.md",
+                  "pointer":  ["properties", "status", "enum"],
+                  "expected": {"AGREED", "CONVERGED", "MAX_ROUNDS"},
+                  "label":    "parliament chairperson_output.status",
+              },
+              {
+                  "schema":   "taskforce/.apm/skills/call-hierarchy/schemas/manager_output.json",
+                  "skill":    "taskforce/.apm/skills/call-hierarchy/SKILL.md",
+                  "pointer":  ["properties", "status", "enum"],
+                  "expected": {"IN_REVIEW", "ERROR"},
+                  "label":    "hierarchy manager_output.status",
+              },
+              {
+                  "schema":   "advisor/.apm/skills/call-advisor/schemas/advisor_output.json",
+                  "skill":    "advisor/.apm/skills/call-advisor/SKILL.md",
+                  "pointer":  ["properties", "verdict", "enum"],
+                  "expected": {"PROCEED", "CORRECT", "ESCALATE", "STOP"},
+                  "label":    "advisor advisor_output.verdict",
+              },
+              {
+                  "schema":   "refine-loop/.apm/skills/call-refine-loop/schemas/refine_loop_output.json",
+                  "skill":    "refine-loop/.apm/skills/call-refine-loop/SKILL.md",
+                  "pointer":  ["properties", "status", "enum"],
+                  "expected": {"CONVERGED", "MAX_ITER", "ESCALATE", "ABORT"},
+                  "label":    "refine-loop refine_loop_output.status",
+              },
+          ]
+
+          def resolve_pointer(obj, keys):
+              for k in keys:
+                  if isinstance(obj, dict):
+                      obj = obj.get(k, None)
+                  else:
+                      return None
+              return obj
+
+          fail = False
+          for chk in CHECKS:
+              schema_path, skill_path = chk["schema"], chk["skill"]
+              try:
+                  schema = json.load(open(schema_path))
+              except FileNotFoundError:
+                  print(f"::error file={schema_path}::schema file not found")
+                  fail = True
+                  continue
+              try:
+                  skill_text = open(skill_path).read()
+              except FileNotFoundError:
+                  print(f"::error file={skill_path}::SKILL.md not found")
+                  fail = True
+                  continue
+
+              enum_list = resolve_pointer(schema, chk["pointer"])
+              if not isinstance(enum_list, list):
+                  print(f"::error file={schema_path}::cannot resolve {'.'.join(chk['pointer'])} — not a list")
+                  fail = True
+                  continue
+
+              schema_statuses = set(enum_list)
+              expected = chk["expected"]
+
+              # Check A: schema enum must match expected set exactly (no additions, no deletions)
+              missing_from_schema = expected - schema_statuses
+              extra_in_schema = schema_statuses - expected
+              if missing_from_schema:
+                  print(f"::error file={schema_path}::{chk['label']}: schema enum missing "
+                        f"{sorted(missing_from_schema)} — update schema or remove from CI expected set")
+                  fail = True
+              if extra_in_schema:
+                  print(f"::error file={schema_path}::{chk['label']}: schema enum contains "
+                        f"unexpected {sorted(extra_in_schema)} — add to CI expected set and document "
+                        f"in {skill_path} Caller Response Contract")
+                  fail = True
+
+              # Check B: each schema status must be documented in SKILL.md
+              for status in sorted(schema_statuses):
+                  if status not in skill_text:
+                      print(f"::error file={skill_path}::schema status '{status}' (from {schema_path}) "
+                            f"not found in Caller Response Contract — document it (ADR-009)")
+                      fail = True
+                  else:
+                      print(f"  ✓ {chk['label']}: '{status}' present in schema and SKILL.md")
+
+              if not fail:
+                  print(f"  ✓ {chk['label']}: schema enum {sorted(schema_statuses)} consistent with expected set")
+
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint is_critical field in quality gate schemas (ADR-018/019 Lint K)
+        run: |
+          # ADR-018 extended Hierarchy schemas (member_output.json, manager_output.json)
+          # with is_critical: boolean to mark checklist items as blocking vs. best-effort.
+          # ADR-019 extended Parliament schema (chairperson_output.json) identically.
+          # This lint verifies the field is present with type boolean in each schema,
+          # preventing silent regression if the field is accidentally removed.
+          python3 - <<'PY'
+          import json, sys
+
+          CHECKS = [
+              {
+                  "schema":  "taskforce/.apm/skills/call-hierarchy/schemas/member_output.json",
+                  "pointer": ["properties", "checklist_coverage", "additionalProperties", "properties"],
+                  "label":   "member_output checklist_coverage",
+                  "adr":     "ADR-018",
+              },
+              {
+                  "schema":  "taskforce/.apm/skills/call-hierarchy/schemas/manager_output.json",
+                  "pointer": ["properties", "checklist_validation", "items", "properties"],
+                  "label":   "manager_output checklist_validation",
+                  "adr":     "ADR-018",
+              },
+              {
+                  "schema":  "parliament/.apm/skills/call-parliament/schemas/chairperson_output.json",
+                  "pointer": ["properties", "checklist_validation", "additionalProperties", "properties"],
+                  "label":   "chairperson_output checklist_validation",
+                  "adr":     "ADR-019",
+              },
+          ]
+
+          def resolve_pointer(obj, keys):
+              for k in keys:
+                  if isinstance(obj, dict):
+                      obj = obj.get(k)
+                      if obj is None:
+                          return None
+                  else:
+                      return None
+              return obj
+
+          fail = False
+          for chk in CHECKS:
+              try:
+                  schema = json.load(open(chk["schema"]))
+              except FileNotFoundError:
+                  print(f"::error file={chk['schema']}::schema file not found")
+                  fail = True
+                  continue
+
+              props = resolve_pointer(schema, chk["pointer"])
+              if not isinstance(props, dict):
+                  print(
+                      f"::error file={chk['schema']}::{chk['label']}: cannot resolve "
+                      f"properties dict at {'.'.join(chk['pointer'])} ({chk['adr']} Lint K)"
+                  )
+                  fail = True
+                  continue
+
+              if "is_critical" not in props:
+                  print(
+                      f"::error file={chk['schema']}::{chk['label']}: missing 'is_critical' "
+                      f"property — add {{\"type\": \"boolean\"}} entry ({chk['adr']} Lint K)"
+                  )
+                  fail = True
+              elif props["is_critical"].get("type") != "boolean":
+                  print(
+                      f"::error file={chk['schema']}::{chk['label']}: 'is_critical' must have "
+                      f"type 'boolean', got '{props['is_critical'].get('type')}' ({chk['adr']} Lint K)"
+                  )
+                  fail = True
+              else:
+                  print(
+                      f"  ✓ {chk['schema']}: {chk['label']}.is_critical: boolean present ({chk['adr']})"
+                  )
+
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint role taxonomy tag values (ADR-010 / ADR-011)
+        run: |
+          # Every ``[role: <value>]`` tag applied to a heading in
+          # *.apm/agents/*.agent.md must use a value from the ADR-010
+          # closed set (agent identity | agent capability | instruction
+          # | hook). Catches typos and ad-hoc role names that drift away
+          # from the taxonomy. Only headings are checked — prose
+          # mentions like "tagged with [role: ...] for one of these
+          # values" are intentionally ignored. Code fences are also
+          # skipped so example tables in docs/templates do not produce
+          # false positives.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          ALLOWED = {"agent identity", "agent capability", "instruction", "hook"}
+          HEADING_RE = re.compile(r"^#{1,6}\s")
+          ROLE_TAG_RE = re.compile(r"`\[role:\s*([^`\]]+?)\s*\]`")
+          fail = False
+          for path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              in_fence = False
+              with open(path) as f:
+                  for lineno, line in enumerate(f, 1):
+                      stripped = line.lstrip()
+                      if stripped.startswith("```"):
+                          in_fence = not in_fence
+                          continue
+                      if in_fence or not HEADING_RE.match(line):
+                          continue
+                      for match in ROLE_TAG_RE.finditer(line):
+                          value = match.group(1).strip()
+                          if value not in ALLOWED:
+                              print(
+                                  f"::error file={path},line={lineno}::"
+                                  f"unknown [role: {value}] — must be one of "
+                                  f"{sorted(ALLOWED)} (ADR-010)"
+                              )
+                              fail = True
+                          else:
+                              print(f"  ✓ {path}:{lineno} [role: {value}]")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint role tag completeness (ADR-010 / ADR-011)
+        run: |
+          # Every H2 heading (## ...) outside code fences in every
+          # */.apm/agents/*.agent.md must carry at least one [role: ...] tag.
+          # This enforces that all sections are classified under ADR-010's
+          # taxonomy — the companion lint "Lint role taxonomy tag values"
+          # handles the closed-set check; this step catches sections that
+          # were added without a tag at all.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          H2_RE = re.compile(r"^## ")
+          fail = False
+          for path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              in_fence = False
+              with open(path) as f:
+                  for lineno, line in enumerate(f, 1):
+                      stripped = line.lstrip()
+                      if stripped.startswith("```"):
+                          in_fence = not in_fence
+                          continue
+                      if in_fence or not H2_RE.match(line):
+                          continue
+                      if "`[role:" not in line:
+                          print(
+                              f"::error file={path},line={lineno}::"
+                              f"H2 heading has no [role: ...] tag — every H2 "
+                              f"must be annotated (ADR-010)"
+                          )
+                          fail = True
+                      else:
+                          print(f"  ✓ {path}:{lineno} tagged")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint role canonical sources (ADR-012)
+        run: |
+          # ADR-012 §2 designates only "Assembled View" agent files as requiring
+          # Canonical Source files in .apm/instructions/ and .apm/hooks/.
+          # An Assembled View is identified by the "Assembled View" marker in its
+          # header (e.g. easy-agent.agent.md).  Simple agent files (advisor,
+          # parliament-*, etc.) carry [role: instruction] tags for taxonomy
+          # annotation purposes (ADR-010) but are not Assembled Views — their
+          # sections ARE the canonical source already.  Canonical Source
+          # enforcement therefore applies only to Assembled View files.
+          fail=0
+          for agent in */.apm/agents/*.agent.md; do
+            pkg=$(echo "$agent" | cut -d/ -f1)
+            # Skip files that are not declared Assembled Views
+            if ! grep -qF 'Assembled View' "$agent"; then
+              echo "  ○ $agent: not an Assembled View — skipping canonical source check"
+              continue
+            fi
+            if grep -qF '[role: instruction]' "$agent"; then
+              count=$(find "$pkg/.apm/instructions" -name '*.md' 2>/dev/null | wc -l)
+              if [ "$count" -eq 0 ]; then
+                echo "::error file=$agent::Assembled View has [role: instruction] sections but $pkg/.apm/instructions/ has no .md files (ADR-012)"
+                fail=1
+              else
+                echo "  ✓ $pkg: instructions/ canonical source present ($count file(s))"
+              fi
+            fi
+            if grep -qF '[role: hook]' "$agent"; then
+              count=$(find "$pkg/.apm/hooks" -name '*.md' 2>/dev/null | wc -l)
+              if [ "$count" -eq 0 ]; then
+                echo "::error file=$agent::Assembled View has [role: hook] sections but $pkg/.apm/hooks/ has no .md files (ADR-012)"
+                fail=1
+              else
+                echo "  ✓ $pkg: hooks/ canonical source present ($count file(s))"
+              fi
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - name: Lint canonical source section registry (ADR-021 Lint G)
+        run: |
+          # Verifies the bidirectional section coverage declared in each
+          # canonical source file's YAML frontmatter (ADR-021).
+          #
+          # Forward check (canonical → assembled view):
+          #   For each .apm/instructions/*.md and .apm/hooks/*.md that carries a
+          #   `canonical_source.sections` list, every section name in that list
+          #   must appear as an H2 heading in the `assembles_into` target file.
+          #
+          # Reverse check (assembled view → canonical):
+          #   For every `## ... [role: instruction]` or `## ... [role: hook]` H2
+          #   in an Assembled View agent file, the normalised heading (minus the
+          #   backtick [role:...] suffix) must be covered by at least one
+          #   canonical source's sections list.
+          #
+          # Only files with `canonical_source:` frontmatter are in scope; packages
+          #   without it are silently skipped (ADR-012 scopes this to easy-agent).
+          python3 - <<'PY'
+          import re, sys, pathlib
+          try:
+              import yaml
+          except ImportError:
+              import subprocess, sys as _sys
+              subprocess.run([_sys.executable, "-m", "pip", "install", "-q", "pyyaml"], check=True)
+              import yaml
+
+          ROLE_H2_RE = re.compile(r"^## (.+?) `\[role: (instruction|hook)\]`", re.MULTILINE)
+          fail = False
+          all_covered_per_target: dict[str, set] = {}
+
+          canonical_files = sorted(
+              list(pathlib.Path(".").glob("*/.apm/instructions/*.md")) +
+              list(pathlib.Path(".").glob("*/.apm/hooks/*.md"))
+          )
+
+          for cf in canonical_files:
+              text = cf.read_text()
+              if not text.startswith("---"):
+                  continue
+              try:
+                  end = text.index("---", 3)
+              except ValueError:
+                  continue
+              fm = yaml.safe_load(text[3:end]) or {}
+              cs = fm.get("canonical_source")
+              if not cs or "sections" not in cs:
+                  continue
+
+              pkg_apm = cf.parent.parent          # e.g. easy-agent/.apm
+              target_path = pkg_apm / cs["assembles_into"]
+              sections = cs["sections"]
+
+              if not target_path.exists():
+                  print(f"::error file={cf}::assembles_into '{cs['assembles_into']}' not found at {target_path}")
+                  fail = True
+                  continue
+
+              target_text = target_path.read_text()
+              target_key = str(target_path)
+              covered = all_covered_per_target.setdefault(target_key, set())
+
+              for section in sections:
+                  pattern = rf"^## {re.escape(section)}"
+                  if re.search(pattern, target_text, re.MULTILINE):
+                      print(f"  ✓ {cf.name} → '{section}' found in {target_path.name}")
+                      covered.add(section)
+                  else:
+                      print(
+                          f"::error file={cf}::section '{section}' listed in canonical_source.sections "
+                          f"but not found as H2 heading in {target_path} (ADR-021 Lint G forward check)"
+                      )
+                      fail = True
+
+          # Reverse check: every [role: instruction/hook] H2 in assembled-view
+          # agent files must be covered by at least one canonical source.
+          for agent_path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              if not re.search(r"Assembled View", agent_path.read_text()):
+                  continue
+              agent_text = agent_path.read_text()
+              agent_key = str(agent_path)
+              covered = all_covered_per_target.get(agent_key, set())
+              for m in ROLE_H2_RE.finditer(agent_text):
+                  heading = m.group(1).strip()
+                  if heading not in covered:
+                      print(
+                          f"::error file={agent_path}::H2 '{heading}' has [role: {m.group(2)}] "
+                          f"but is not covered by any canonical source's sections list "
+                          f"(ADR-021 Lint G reverse check) — add it to the appropriate "
+                          f".apm/instructions/ or .apm/hooks/ frontmatter"
+                      )
+                      fail = True
+                  else:
+                      print(f"  ✓ {agent_path.name}: '[role: {m.group(2)}]' H2 '{heading}' covered")
+
+          if not fail:
+              print("  ✓ All canonical source section registries are consistent (ADR-021)")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint hook event vocabulary (ADR-011 Lint D)
+        run: |
+          # Every hook event name cited in .apm/hooks/*.md files and in
+          # [role: hook] sections of *.agent.md files must belong to the
+          # ADR-011 closed set.  Event names are extracted from:
+          #   - Backtick-quoted identifiers at the start of table cells
+          #     (e.g. `SessionStart`, `NExchangeElapsed[N=15]`)
+          #   - YAML-like blocks: lines starting with "event:" inside a hook
+          #     section (Form A of ADR-011)
+          # Modifier suffixes like [N=15] or [verdict=APPROVED] are stripped
+          # before comparison so parameterised forms pass the check.
+          python3 - <<'PY'
+          import re, sys, pathlib
+
+          ALLOWED_EVENTS = {
+              "SessionStart", "SessionEnd",
+              "PhaseGateComplete", "PhaseTransition",
+              "NExchangeElapsed", "OnExchange",
+              "PreToolUse", "PostToolUse", "OnUserMessage",
+          }
+          # Strip optional suffix: [...], (...), spaces
+          STRIP_SUFFIX_RE = re.compile(r"[\[\(].*")
+          # Backtick-quoted identifier in first table column or standalone
+          BACKTICK_EVENT_RE = re.compile(r"`([A-Z][A-Za-z]+(?:[\[\(][^\]`]*[\]\)])?)`")
+          # YAML-like form: event: <name>
+          YAML_EVENT_RE = re.compile(r"^\s*event:\s+`?([A-Z][A-Za-z]+(?:[\[\(][^\]`]*[\]\)])?)`?")
+
+          def extract_events(text, path):
+              """Return list of (event_base, lineno) from text."""
+              found = []
+              for lineno, line in enumerate(text.splitlines(), 1):
+                  for m in BACKTICK_EVENT_RE.finditer(line):
+                      base = STRIP_SUFFIX_RE.sub("", m.group(1)).strip()
+                      if base in ALLOWED_EVENTS or base not in {
+                          # reject obvious non-event PascalCase (e.g. JSON types)
+                          "APPROVED","REVISE","DELEGATE","LOOPBACK","ESCALATE","STOP",
+                          "TODO","IN_PROGRESS","IN_REVIEW","REJECTED","ERROR",
+                      }:
+                          if base[0].isupper() and base not in {
+                              "Claude","VS","Skill","JSON","YAML","ADR","APM",
+                              "Advocate","Reviewer","Compliance","Pragmatist",
+                              "Planner","Implementer","Manager","Member","Chairperson",
+                          }:
+                              found.append((base, lineno))
+                  m = YAML_EVENT_RE.match(line)
+                  if m:
+                      base = STRIP_SUFFIX_RE.sub("", m.group(1)).strip()
+                      found.append((base, lineno))
+              return found
+
+          def check_file(path, text):
+              fail = False
+              for base, lineno in extract_events(text, path):
+                  if base not in ALLOWED_EVENTS:
+                      print(
+                          f"::error file={path},line={lineno}::"
+                          f"unknown hook event '{base}' — must be one of "
+                          f"{sorted(ALLOWED_EVENTS)} (ADR-011)"
+                      )
+                      fail = True
+                  else:
+                      print(f"  ✓ {path}:{lineno} event '{base}'")
+              return fail
+
+          fail = False
+
+          # 1. Scan all .apm/hooks/*.md canonical source files
+          for path in sorted(pathlib.Path(".").glob("*/.apm/hooks/*.md")):
+              text = path.read_text()
+              fail |= check_file(path, text)
+
+          # 2. Scan [role: hook] sections in agent files
+          for path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = path.read_text()
+              # Extract only sections tagged [role: hook]
+              hook_sections = []
+              in_hook = False
+              current = []
+              current_start = 0
+              for lineno, line in enumerate(text.splitlines(), 1):
+                  if re.match(r"^## ", line):
+                      if in_hook and current:
+                          hook_sections.append((current_start, "\n".join(current)))
+                      in_hook = "`[role: hook]`" in line
+                      current = [line]
+                      current_start = lineno
+                  elif in_hook:
+                      current.append(line)
+              if in_hook and current:
+                  hook_sections.append((current_start, "\n".join(current)))
+
+              for start_lineno, section_text in hook_sections:
+                  for base, rel_lineno in extract_events(section_text, path):
+                      abs_lineno = start_lineno + rel_lineno - 1
+                      if base not in ALLOWED_EVENTS:
+                          print(
+                              f"::error file={path},line={abs_lineno}::"
+                              f"unknown hook event '{base}' in [role: hook] section "
+                              f"— must be one of {sorted(ALLOWED_EVENTS)} (ADR-011)"
+                          )
+                          fail = True
+                      else:
+                          print(f"  ✓ {path}:{abs_lineno} event '{base}'")
+
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint Fallback Chain vs Caller Response Contract (ADR-009 drift detection)
+        run: |
+          # Verifies that every subagent status token cited in easy-agent's Fallback Chain
+          # actually appears in the corresponding call-X/SKILL.md Caller Response Contract.
+          # This detects vocabulary drift where easy-agent references a status that the
+          # skill no longer defines (or vice-versa after a rename).
+          # ADR-015: call-advisor is now included, and DISPATCH_FAILURE is tracked for all
+          # four skills.
+          # Coverage extended to include all per-unit return statuses (ADR-008):
+          #   parliament: AGREED, CONVERGED added (per-topic chairperson_output statuses)
+          #   hierarchy:  IN_REVIEW, ERROR added (per-task manager_output statuses)
+          python3 - <<'PY'
+          import re, sys
+          skill_files = {
+              "refine-loop": "refine-loop/.apm/skills/call-refine-loop/SKILL.md",
+              "parliament":  "parliament/.apm/skills/call-parliament/SKILL.md",
+              "hierarchy":   "taskforce/.apm/skills/call-hierarchy/SKILL.md",
+              "advisor":     "advisor/.apm/skills/call-advisor/SKILL.md",
+          }
+          attributed = {
+              "refine-loop": {"ESCALATE", "MAX_ITER", "ABORT", "DISPATCH_FAILURE"},
+              "parliament":  {"AGREED", "CONVERGED", "MAX_ROUNDS", "max_rejections", "DISPATCH_FAILURE"},
+              "hierarchy":   {"IN_REVIEW", "ERROR", "max_rejections", "DISPATCH_FAILURE"},
+              "advisor":     {"PROCEED", "CORRECT", "ESCALATE", "STOP", "DISPATCH_FAILURE"},
+          }
+          fail = False
+          for skill, tokens in attributed.items():
+              path = skill_files[skill]
+              try:
+                  content = open(path).read()
+              except FileNotFoundError:
+                  print(f"::error file={path}::file not found")
+                  fail = True
+                  continue
+              for token in sorted(tokens):
+                  if token not in content:
+                      print(f"::error file={path}::status token '{token}' is cited in easy-agent Fallback Chain "
+                            f"but not found in {path} (ADR-009 drift)")
+                      fail = True
+                  else:
+                      print(f"  ✓ {skill}: '{token}' present in Caller Response Contract")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint dispatch failure handling (ADR-015 Lint F)
+        run: |
+          # Every call-*/SKILL.md must declare explicit DISPATCH_FAILURE handling
+          # in its Caller Response Contract section. Introduced by ADR-015 to ensure
+          # all skills have a defined behavior when the subagent itself cannot be
+          # started (tool unavailable, timeout, etc.), as distinct from a subagent
+          # that starts but returns an ERROR status.
+          fail=0
+          for skill in */.apm/skills/call-*/SKILL.md; do
+            if ! grep -qF 'DISPATCH_FAILURE' "$skill"; then
+              echo "::error file=$skill::missing DISPATCH_FAILURE handling in Caller Response Contract (ADR-015 Lint F)"
+              fail=1
+            else
+              echo "  ✓ $skill"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - name: Lint runSubagent agent name references
+        run: |
+          # Every runSubagent(agentName: "X", ...) call in any .apm/**/*.md file
+          # must reference an agent name that exists in some package's
+          # .apm/agents/*.agent.md (as declared in its `name:` frontmatter field).
+          # This catches the structural drift where a hook or skill describes
+          # calling a named agent that has never been defined — e.g., the memoir
+          # VS Code bridge pattern introduced in ADR-016.
+          # Template placeholders like {agent-name} are skipped.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          AGENT_RE = re.compile(r'runSubagent\(\s*agentName:\s*["\']([A-Za-z0-9_-]+)["\']')
+          PLACEHOLDER_RE = re.compile(r'^\{')
+          agent_names = set()
+          for agent_file in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = agent_file.read_text()
+              m = re.search(r'^name:\s*["\']?([A-Za-z0-9_-]+)["\']?', text, re.MULTILINE)
+              if m:
+                  agent_names.add(m.group(1))
+          fail = False
+          for md_file in sorted(pathlib.Path(".").glob("*/.apm/**/*.md")):
+              text = md_file.read_text()
+              for m in AGENT_RE.finditer(text):
+                  agent_name = m.group(1)
+                  if PLACEHOLDER_RE.match(agent_name):
+                      continue
+                  if agent_name not in agent_names:
+                      print(f"::error file={md_file}::runSubagent references undefined agent "
+                            f"'{agent_name}' — add {agent_name}.agent.md to the appropriate package")
+                      fail = True
+                  else:
+                      print(f"  ✓ {md_file}: runSubagent(agentName: '{agent_name}')")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint agent(subagent_type) name references (ADR-022 Lint I)
+        run: |
+          # Every agent(subagent_type: "X") / Agent(subagent_type: "X") call in
+          # any .apm/**/*.md file must reference an agent name that exists in some
+          # package's .apm/agents/*.agent.md (name: frontmatter field).
+          # This is the Claude Code invocation pattern; the sibling lint above covers
+          # VS Code runSubagent(agentName: "X").  Template placeholders whose value
+          # starts with { are excluded by the regex character class.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          SUBAGENT_TYPE_RE = re.compile(r'subagent_type:\s*["\']([A-Za-z0-9_-]+)["\']')
+          agent_names = set()
+          for agent_file in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = agent_file.read_text()
+              m = re.search(r'^name:\s*["\']?([A-Za-z0-9_-]+)["\']?', text, re.MULTILINE)
+              if m:
+                  agent_names.add(m.group(1))
+          fail = False
+          for md_file in sorted(pathlib.Path(".").glob("*/.apm/**/*.md")):
+              text = md_file.read_text()
+              for m in SUBAGENT_TYPE_RE.finditer(text):
+                  agent_name = m.group(1)
+                  if agent_name not in agent_names:
+                      print(f"::error file={md_file}::agent(subagent_type: '{agent_name}') references "
+                            f"undefined agent — add {agent_name}.agent.md to the appropriate package")
+                      fail = True
+                  else:
+                      print(f"  ✓ {md_file}: subagent_type='{agent_name}'")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint task(agent_type my-copilot:) name references (ADR-022 Lint J)
+        run: |
+          # Every task(agent_type: "my-copilot:X") call in any .apm/**/*.md file
+          # must reference an agent name that exists in some package's
+          # .apm/agents/*.agent.md (name: frontmatter field).
+          # This is the Copilot CLI invocation pattern (ADR-022); the sibling lints
+          # cover VS Code runSubagent and Claude Code agent(subagent_type).
+          # Template placeholders like {agent-name} are excluded by the regex
+          # character class ([A-Za-z0-9_-]+ does not match '{').
+          python3 - <<'PY'
+          import re, sys, pathlib
+          COPILOT_RE = re.compile(r'agent_type:\s*["\']my-copilot:([A-Za-z0-9_-]+)["\']')
+          agent_names = set()
+          for agent_file in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = agent_file.read_text()
+              m = re.search(r'^name:\s*["\']?([A-Za-z0-9_-]+)["\']?', text, re.MULTILINE)
+              if m:
+                  agent_names.add(m.group(1))
+          fail = False
+          for md_file in sorted(pathlib.Path(".").glob("*/.apm/**/*.md")):
+              text = md_file.read_text()
+              for m in COPILOT_RE.finditer(text):
+                  agent_name = m.group(1)
+                  if agent_name not in agent_names:
+                      print(f"::error file={md_file}::task(agent_type: 'my-copilot:{agent_name}') "
+                            f"references undefined agent — add {agent_name}.agent.md to the appropriate package")
+                      fail = True
+                  else:
+                      print(f"  ✓ {md_file}: agent_type=my-copilot:'{agent_name}'")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint Context Window Management declaration (ADR-013)
+        run: |
+          # Every call-*/SKILL.md must declare a Context Window Management (or
+          # equivalent Context Budget) section with per-nesting-level token budgets.
+          # Accepts the English heading, the Japanese heading, or the advisor variant
+          # ("Context Budget Tracking"). Introduced by ADR-013, mirroring the
+          # Caller Response Contract obligation established by ADR-009.
+          fail=0
+          for skill in */.apm/skills/call-*/SKILL.md; do
+            if ! grep -qE '^##+ .*(Context.*Management|Context.*Budget|コンテキスト管理|コンテキスト予算)' "$skill"; then
+              echo "::error file=$skill::missing Context Window Management / Context Budget heading (ADR-013)"
+              fail=1
+            else
+              echo "  ✓ $skill"
+            fi
+          done
+          [ "$fail" -eq 0 ]
+
+      - name: Lint cross-skill chain budget table (ADR-014)
+        run: |
+          # ADR-014 requires that easy-agent.agent.md's Context Window Management
+          # section contains a Parliament→Hierarchy chain budget subsection.
+          # The subsection heading must mention 'call-parliament' AND 'call-hierarchy'
+          # (either via a table row or a dedicated heading), OR carry a heading
+          # that includes '連鎖' / 'chain' / 'Handoff' at H3 or deeper within the
+          # CWM section.  This catches the regression where the chain budget table
+          # is removed or the CWM section is rewritten without the cross-skill rule.
+          python3 - <<'PY'
+          import re, sys, pathlib
+
+          TARGET = pathlib.Path("easy-agent/.apm/agents/easy-agent.agent.md")
+          if not TARGET.exists():
+              print(f"::error file={TARGET}::file not found")
+              sys.exit(1)
+
+          text = TARGET.read_text()
+          lines = text.splitlines()
+
+          # Locate the CWM H2 section boundaries
+          CWM_H2_RE = re.compile(
+              r"^## .*(Context.*Management|Context.*Budget|コンテキスト管理|コンテキスト予算)",
+              re.IGNORECASE,
+          )
+          NEXT_H2_RE = re.compile(r"^## ")
+          CHAIN_HEADING_RE = re.compile(
+              r"^###+ .*(連鎖|chain|Handoff)", re.IGNORECASE
+          )
+          PARLIAMENT_RE = re.compile(r"call-parliament|Parliament", re.IGNORECASE)
+          HIERARCHY_RE = re.compile(r"call-hierarchy|Hierarchy", re.IGNORECASE)
+
+          cwm_start = None
+          cwm_end = None
+          for i, line in enumerate(lines):
+              if CWM_H2_RE.match(line):
+                  cwm_start = i
+              elif cwm_start is not None and NEXT_H2_RE.match(line):
+                  cwm_end = i
+                  break
+
+          if cwm_start is None:
+              print(f"::error file={TARGET}::Context Window Management section not found (ADR-014)")
+              sys.exit(1)
+
+          cwm_lines = lines[cwm_start : cwm_end] if cwm_end else lines[cwm_start:]
+          cwm_text = "\n".join(cwm_lines)
+
+          # Check 1: a H3+ heading containing '連鎖' / 'chain' / 'Handoff'
+          has_chain_heading = any(CHAIN_HEADING_RE.match(l) for l in cwm_lines)
+          # Check 2: both 'parliament' and 'hierarchy' appear in the CWM section
+          has_parliament = bool(PARLIAMENT_RE.search(cwm_text))
+          has_hierarchy  = bool(HIERARCHY_RE.search(cwm_text))
+
+          if has_chain_heading and has_parliament and has_hierarchy:
+              print(f"  ✓ {TARGET}: chain budget table present (ADR-014)")
+              sys.exit(0)
+
+          if not has_chain_heading:
+              print(
+                  f"::error file={TARGET}::Context Window Management section has no "
+                  f"'連鎖' / 'chain' / 'Handoff' H3+ subsection — add a chain budget "
+                  f"table per ADR-014"
+              )
+          if not has_parliament:
+              print(
+                  f"::error file={TARGET}::chain budget table in CWM does not mention "
+                  f"'call-parliament' / 'Parliament' (ADR-014)"
+              )
+          if not has_hierarchy:
+              print(
+                  f"::error file={TARGET}::chain budget table in CWM does not mention "
+                  f"'call-hierarchy' / 'Hierarchy' (ADR-014)"
+              )
+          sys.exit(1)
+          PY
+
+      - name: Lint is_critical semantics in Caller Response Contracts (ADR-018/019 Lint L)
+        run: |
+          # ADR-018 and ADR-019 extend the quality gate model with is_critical: boolean
+          # so callers can distinguish blocking from best-effort checklist failures.
+          # For this model to be useful, the Caller Response Contract section of each
+          # call-* SKILL.md must explain to callers how to handle is_critical.
+          # This lint verifies the field is documented in the CRC sections of
+          # call-hierarchy (ADR-018) and call-parliament (ADR-019) SKILL.md files.
+          python3 - <<'PY'
+          import re, sys
+
+          SKILLS = [
+              {
+                  "path":  "taskforce/.apm/skills/call-hierarchy/SKILL.md",
+                  "label": "call-hierarchy",
+                  "adr":   "ADR-018",
+              },
+              {
+                  "path":  "parliament/.apm/skills/call-parliament/SKILL.md",
+                  "label": "call-parliament",
+                  "adr":   "ADR-019",
+              },
+          ]
+
+          CRC_HEADING_RE = re.compile(
+              r"^##+ .*(Caller Response Contract|呼び出し元の応答コントラクト)",
+              re.MULTILINE,
+          )
+          NEXT_H2_RE = re.compile(r"^## ", re.MULTILINE)
+
+          fail = False
+          for skill in SKILLS:
+              try:
+                  text = open(skill["path"]).read()
+              except FileNotFoundError:
+                  print(f"::error file={skill['path']}::file not found")
+                  fail = True
+                  continue
+
+              m = CRC_HEADING_RE.search(text)
+              if not m:
+                  print(
+                      f"::error file={skill['path']}::Caller Response Contract section not found "
+                      f"(ADR-009 prerequisite for Lint L)"
+                  )
+                  fail = True
+                  continue
+
+              # Scope the check to the CRC section only (stop at next H2)
+              next_h2 = NEXT_H2_RE.search(text, m.end())
+              crc_text = text[m.start() : next_h2.start()] if next_h2 else text[m.start():]
+
+              if "is_critical" not in crc_text:
+                  print(
+                      f"::error file={skill['path']}::{skill['label']} Caller Response Contract "
+                      f"does not mention 'is_critical' — document how callers must interpret "
+                      f"is_critical: true/false when routing APPROVED vs. residual_risks "
+                      f"({skill['adr']} Lint L)"
+                  )
+                  fail = True
+              else:
+                  print(
+                      f"  ✓ {skill['path']}: 'is_critical' present in Caller Response Contract "
+                      f"({skill['adr']})"
+                  )
+
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint residual_risks checklist bridge documentation (ADR-020 Lint M)
+        run: |
+          # ADR-020 mandates that Hierarchy's residual_risks are bridged to refine-loop's
+          # requirements_checklist (not task_context) so that non-critical Implement failures
+          # receive explicit PASS/FAIL verdicts in the Verify phase.
+          # Three files must document this bridge; this lint verifies each in turn.
+          fail=0
+
+          # Check 1: call-hierarchy SKILL.md — 'requirements_checklist' cited as
+          #   the destination for residual_risks in the Caller Response Contract.
+          HIER="taskforce/.apm/skills/call-hierarchy/SKILL.md"
+          if ! grep -q 'requirements_checklist' "$HIER"; then
+            echo "::error file=$HIER::does not mention 'requirements_checklist' — " \
+                 "document the ADR-020 bridge in the Caller Response Contract (ADR-020 Lint M)"
+            fail=1
+          else
+            echo "  ✓ $HIER: 'requirements_checklist' present (ADR-020)"
+          fi
+
+          # Check 2: call-refine-loop SKILL.md — references ADR-020 or the
+          #   residual_risks / requirements_checklist pairing in parameter docs.
+          REFINE="refine-loop/.apm/skills/call-refine-loop/SKILL.md"
+          if ! grep -qE 'ADR-020|residual_risks' "$REFINE"; then
+            echo "::error file=$REFINE::does not reference 'ADR-020' or 'residual_risks' — " \
+                 "document the bridge in the requirements_checklist parameter description (ADR-020 Lint M)"
+            fail=1
+          else
+            echo "  ✓ $REFINE: ADR-020 bridge documented (ADR-020)"
+          fi
+
+          # Check 3: easy-agent.agent.md — mentions ADR-020 in the refine-loop
+          #   invocation template to guide operators building the checklist.
+          AGENT="easy-agent/.apm/agents/easy-agent.agent.md"
+          if ! grep -q 'ADR-020' "$AGENT"; then
+            echo "::error file=$AGENT::does not mention 'ADR-020' — " \
+                 "add bridge annotation to the call-refine-loop invocation template (ADR-020 Lint M)"
+            fail=1
+          else
+            echo "  ✓ $AGENT: ADR-020 mentioned (ADR-020)"
+          fi
+
+          [ "$fail" -eq 0 ]
+
+      - name: Install dependencies
+        run: apm install --no-policy
+
+      - name: Audit
+        run: apm audit

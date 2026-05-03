@@ -3,20 +3,20 @@
 ## 依存グラフ
 
 ```
-                     ユーザー
-                        ↓
-              ┌──────────────────┐
-              │   easy-agent     │  (統合オーケストレーター・user-invocable)
-              └────────┬─────────┘
-                       │ APM 宣言依存
-        ┌──────────────┼──────────────┬──────────────┐
-        ↓              ↓              ↓              ↓
-  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-  │ advisor  │  │parliament│  │taskforce │  │  memoir  │
-  └──────────┘  └──────────┘  └──────────┘  └──────────┘
+                            ユーザー
+                               ↓
+                     ┌──────────────────┐
+                     │   easy-agent     │  (統合オーケストレーター・user-invocable)
+                     └────────┬─────────┘
+                              │ APM 宣言依存
+        ┌──────────────┬──────┼──────┬──────────────┬──────────────┐
+        ↓              ↓      ↓      ↓              ↓              ↓
+  ┌──────────┐  ┌──────────┐ ┌──────────┐ ┌────────────┐ ┌──────────┐
+  │ advisor  │  │parliament│ │taskforce │ │refine-loop │ │  memoir  │
+  └──────────┘  └──────────┘ └──────────┘ └────────────┘ └──────────┘
 ```
 
-`easy-agent` が他 4 モジュールを APM 宣言依存として束ねる。サブモジュール同士は APM レベルでは独立しており、実行時の呼び出し関係（後述）でのみ結びつく。
+`easy-agent` が他 5 モジュールを APM 宣言依存として束ねる。サブモジュール同士は APM レベルでは独立しており、実行時の呼び出し関係（後述）でのみ結びつく。
 
 ## APM 宣言依存関係
 
@@ -24,10 +24,11 @@
 
 | モジュール | 宣言依存 (apm) |
 |---|---|
-| `easy-agent` | `advisor`, `parliament`, `taskforce`, `memoir` |
+| `easy-agent` | `advisor`, `parliament`, `taskforce`, `memoir`, `refine-loop` |
 | `advisor` | なし |
 | `parliament` | なし |
 | `taskforce` | なし |
+| `refine-loop` | なし |
 | `memoir` | なし |
 
 ルートワークスペース (`apm.yml`) は `easy-agent` のみを宣言依存とし、`easy-agent` の依存解決を通じて全モジュールがインストールされる。
@@ -42,6 +43,7 @@
 |---|---|---|
 | `parliament-chairperson` | Deliberate フェーズ / 設計判断 | call-parliament |
 | `hierarchy-manager` | Implement フェーズ (4ファイル以上) | call-hierarchy |
+| `refine-loop` | Verify フェーズ (反復改善が必要なとき) | call-refine-loop (`agent` ツールで直接 dispatch) |
 | `advisor` | Phase Gate / 判断が必要な局面 | call-advisor |
 
 ### advisor → エスカレーション先
@@ -73,16 +75,30 @@ call-hierarchy (Orchestrator)
         └─→ advisor (任意)
 ```
 
+### refine-loop の内部構造
+
+```
+easy-agent (Verify フェーズ)
+  └─→ refine-loop
+        └─→ ブランクスレートレビュアー (毎イテレーションで新規 dispatch)
+              ├─ Iter 1: 任意の *.agent.md
+              ├─ Iter 2: 任意の *.agent.md (前回と必ず別エージェント)
+              └─ Iter N: ...（[critical] 未達 0 件 が 2 連続するまで）
+```
+
+`refine-loop` 自体はレビュアー役を担わない（自己評価禁止）。毎イテレーションで `agent` ツール経由で新規サブエージェントを dispatch し、ブランクスレート視点での評価を得る。`agent` ツールが利用不可な環境では Step 0 で ABORT する。
+
 ## ツール依存関係
 
 | エージェント | 使用ツール |
 |---|---|
 | easy-agent | read, edit, search, execute, agent, todo |
-| advisor | read, search (実行系ツール不可) |
+| advisor | (なし) — 分析と助言のみを行い、ファイル読み取り・検索・コード編集・コマンド実行は呼び出し元エクゼキューターに委ねる |
 | parliament-chairperson | read, search, agent |
-| parliament-member | read, edit, search, execute, agent |
+| parliament-member | read, search, agent (議論参加者は編集・実行を行わない) |
 | hierarchy-manager | read, search, agent, todo |
 | hierarchy-member | read, edit, search, execute, agent |
+| refine-loop | read, edit, search, execute, agent |
 
 ## 外部インフラ依存
 
@@ -90,3 +106,12 @@ call-hierarchy (Orchestrator)
 |---|---|
 | memoir | Docker, ChromaDB 0.6.3, chromadb Python パッケージ, ONNX runtime |
 | その他全モジュール | なし (純粋な Markdown / JSON 定義) |
+
+
+## 依存変更時の運用チェックリスト
+
+APM 宣言依存（`apm.yml` / `apm.lock.yaml`）に差分が入る変更をマージした場合は、次を最低限実施する。
+
+- `apm install` を再実行し、依存解決結果が再現可能であることを確認する。
+- `git diff --check` で競合マーカーやフォーマット崩れがないことを確認する。
+- `easy-agent/README.md` の「前提条件」表と宣言依存の記述が一致していることを確認する。

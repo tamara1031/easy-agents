@@ -61,6 +61,21 @@ runSubagent(
 - 各呼び出しはステートレス
 - プロンプトに必要な情報を全て含めること
 
+### Claude Code パターン (`agent` ツール利用時)
+
+`agent` ツールでマネージャーを直接起動する。
+
+```
+Agent(
+  subagent_type: "hierarchy-manager",
+  description: "{task_description}",
+  prompt: "<下記テンプレートに従って構築>"
+)
+```
+
+- 結果はエージェントの返り値として直接受け取る（`read_agent` 不要）。
+- 並列実行は依存関係のない `Agent` 呼び出しを同一メッセージで並べることで実現する。
+
 ## Parameters
 
 | パラメータ | 説明 | デフォルト値 |
@@ -93,16 +108,28 @@ runSubagent(
 {context}
 ```
 
-> **`{context}` の用途と解釈**: 主にフェーズ引き継ぎペイロード（smart-agent からの委譲情報）が注入される。上限500トークン。コード全文ではなく関連箇所の要約のみを含めること。
+> **`{context}` の用途と解釈**: 主にフェーズ引き継ぎペイロード（easy-agent からの委譲情報）が注入される。上限500トークン。コード全文ではなく関連箇所の要約のみを含めること。
 
 ## Workflow
 
 ### Phase 1: 初期化
 
 1. ユーザーの入力言語からタスク一覧を作成（タスク ID: `T001` 形式）
-2. 各タスクに承認条件チェックリスト（客観的な判断条件）を設定
+2. 各タスクに承認条件チェックリスト（客観的な判断条件）を設定する。
+   - **重要度タグ**: 達成必須の条件には行頭に `[critical]` を付与する。タグなし項目はベストエフォートとして Reviewer が FAIL しても `risks` への記録にとどめ、REVISE を引き起こさない。
+   - 例: `- [critical] ユーザー認証が機能すること` / `- ドキュメントのスタイルガイドに準拠すること`
 3. `checklist_path` へチェックリストを書き出す。
 4. ユーザーに提示して承諾を求める（承諾なしの起動は禁止）
+
+#### Phase 1 スキップ条件
+
+以下の **両方** を満たす場合、Phase 1 を省略して Phase 2 から開始する:
+
+1. **タスク一覧が Phase 1 フォーマット準拠**: `{context}` に タスクID・チェックリスト・ステータスを含むタスク一覧が存在し、`checklist_path` へ書き出し済みである
+2. **ユーザー承認が取得済み**: 上流エージェント (easy-agent 等) がユーザーに提示し、Confirmation Gate で承認を得ている
+
+> **承認の委譲**: easy-agent の Confirmation Gate でユーザー承認を得た場合、call-hierarchy の Phase 1 承認は充足される。
+> **前提条件**: `{context}` のタスク一覧は **全件承認済み** であること。再承認を求めない。
 
 承認依頼の提示フォーマット：
 
@@ -153,10 +180,12 @@ runSubagent(
 ### Phase 3: ゲートキーパーレビュー
 
 1. Reviewer は Generator-Verifier パターン の Verifier として機能する。
-2. チェックリストの全項目を客観的に審査
-3. 合否判定 → 成功なら APPROVED
-4. 失敗なら REVISE → 差し戻し再試行
-5. 差し戻し "max_rejections" 回数 → ユーザーエスカレーション
+2. チェックリストの全項目を客観的に審査し、各項目の `is_critical` を `[critical]` タグの有無から判定して記録する。
+3. **[critical] 2段階合否判定** (ADR-018):
+   - `[critical]` 項目が **全て PASS** → `verdict: APPROVE`。non-critical FAIL は `risks` に記録する。
+   - `[critical]` 項目が **1つでも FAIL** → `verdict: REVISE`。critical FAIL のみを `rejection_instructions` に列挙する。
+4. 差し戻し → Implementer が critical 項目を修正 → 再レビュー
+5. 差し戻し "max_rejections" 回数（critical 項目の FAIL 基準）→ ユーザーエスカレーション
 
 以下のパターンを検出した場合は "REJECTED" とする：
 
@@ -216,6 +245,38 @@ runSubagent(
 - [ ] 全承認ステータスを網羅した最終レポートを作成
 - [ ] 大局的な矛盾（全成果物がカバーされているか）
 
+## Context Window Management (コンテキスト管理)
+
+### オーケストレーター → マネージャーへの委譲時
+
+1. **コンテキストの最小化**: マネージャープロンプトにはタスク固有の情報のみを含める。
+2. **チェックリストは完全に渡す**: マネージャーがメンバーに正確に伝達できるよう、チェックリストは省略しない。
+3. **補足コンテキストの要約**: `{context}` は関連コードの抜粋 (5-20行) と要約のみ。上限500トークン。
+
+### タスク実行中のコンテキスト爆発防止
+
+1. **フェーズ出力の圧縮**: Planner の出力を Implementer へ渡す際は実装計画の箇条書きのみ（中間調査メモや議論経緯は除外）。
+2. **Reviewer への入力制限**: Reviewer に渡す「これまでの実装」は最新 Implementer 出力のみ。前フェーズの全履歴は渡さない。
+3. **マネージャーへの報告簡素化**: オーケストレーターへの最終報告は `deliverable_path` + `checklist_validation` + `residual_risks` の3点のみ。
+
+### ユーザーへの報告
+
+タスク完了状況は Status Report のワンライナー形式を使用し、詳細ログは含めない。
+
+### トークン予算
+
+| 階層 | 入力上限 | 出力上限 |
+| :--- | :--- | :--- |
+| オーケストレーター → マネージャー | 1,000トークン (context: 500, checklist: 300, task description: 200) | — |
+| マネージャー → Planner | 800トークン (checklist: 300, task description: 200, context要約: 300) | 500トークン (実装計画の箇条書き) |
+| マネージャー → Implementer | 800トークン (plan要約: 400, checklist: 300, task description: 100) | 400トークン (COVERED記録 + 成果物パス) |
+| マネージャー → Reviewer | 600トークン (checklist: 300, 最新Implementer出力: 300) | 400トークン (PASS/FAIL + rejection_instructions) |
+| マネージャー → オーケストレーター | — | 500トークン (manager_output.json) |
+
+> **超過時の対応**: 補足コンテキスト (`context`) を段階的に削減: 500 → 300 → 100トークン。それでも超過する場合は `context` を「チェックリスト達成に直結するコード断片のみ」に絞り込む。チェックリスト自体は常に完全版を渡す。
+
+---
+
 ## When NOT to use（使わないケース）
 
 以下の場合は Hierarchy を使わず、通常実行を選択する：
@@ -225,4 +286,34 @@ runSubagent(
 | 変更対象が 1〜2ファイル | サブエージェントのオーバーヘッドが成果を上回る |
 | タスクの目的が明快な小タスク | サブエージェントのオーバーヘッドが不釣り合い |
 | タスクが 15分以内に完了する見込み | 調査コストが高い |
-| 戦略的な変更が必要な `design-Execute` | `Parliament` (複数エージェント会議) への委譲を優先 |
+| 戦略的な変更が必要な `designExecute` | `Parliament` (複数エージェント会議) への委譲を優先 |
+
+---
+
+## 呼び出し元の応答コントラクト (Caller Response Contract)
+
+call-hierarchy を呼び出したエージェント（通常 easy-agent の Implement フェーズ）が、各返却ステータスを受け取った際に取るべきアクションを定義する。返却の単位は **タスクごとの `manager_output.status`**（schemas/manager_output.json）と、**オーケストレーター集約後の最終状態**（Phase 4 の `grand_summary` または Phase 3 のフォールバック発動）の2層に分かれる。
+
+### タスク単位 (Per-task) の返却ステータス
+
+| ステータス | 意味 | 呼び出し元が取るべきアクション |
+| :--- | :--- | :--- |
+| `IN_REVIEW` | Manager が成果物をオーケストレーターへ提出（Reviewer 検証は完了） | `checklist_validation` を確認。**`[critical]` 項目が全て PASS**（`is_critical: true` かつ `result: "PASS"`）かつ Phase 3 検証パターン（単一ファイルハック等）に該当しなければ当該タスクを `APPROVED` に遷移。`[critical]` 項目の FAIL が 1 つでもあれば `REJECTED` で差し戻し。non-critical (`is_critical: false`) の FAIL は `APPROVED` を妨げず `residual_risks` に転記する（ADR-018）。 |
+| `ERROR` | Manager 内部ループ上限超過などマネージャーが自力で回復不能な失敗 | 当該タスクのステータスを `ERROR` に固定し、`error_reason` を要約。**自律的な再投入は行わない**。タスク全体への影響を評価し、Advisory 相談か Phase Gate で STOP を選択 |
+
+> **REJECTED は差し戻しカウント (`rejection_count`) を 1 加算してから再キューする**。`max_rejections` を超過した時点でオーケストレーター集約レベルのフォールバックへ遷移する（下表参照）。`max_rejections` カウントの対象は `[critical]` 項目の FAIL に基づく REJECTED のみ。
+
+### オーケストレーター集約レベルの返却ステータス
+
+| ステータス | 根本原因 | 呼び出し元が取るべきアクション |
+| :--- | :--- | :--- |
+| 全タスク APPROVED | Phase 3 で全タスクがチェックリストを充足し、Phase 4 で `grand_summary` が生成された | `Verify` フェーズへ進む。成果物リスト（各タスクの `deliverable_path`）を refine-loop の `task_context` に含める。**`residual_risks` は refine-loop の `requirements_checklist` へ non-critical 項目（`[critical]` タグなし）として追記して引き継ぐ**（ADR-020）。 |
+| `max_rejections` 超過 | 1つ以上のタスクで差し戻し回数が上限を超過（チェックリスト未達のまま） | call-hierarchy の **フォールバック戦略 (Phase 3)** で提示される選択肢（手動介入 / 差し戻しリセット / 別アプローチで再試行）を **そのままユーザーへ転送** する。ユーザー選択後に再実行、または Phase Gate で STOP |
+| タスク `ERROR` の連鎖 | 単一タスクの `ERROR` が `depends_on` で連結されたタスクへ波及 | 影響範囲（依存先タスク群）を特定して未着手のものは `TODO` のまま保留し、進捗レポートにまとめてユーザーへ報告。**自動継続せずユーザー判断を仰ぐ**（`status` enum を逸脱した独自ラベルは導入しない） |
+| `DISPATCH_FAILURE` | `hierarchy-manager` サブエージェントの起動失敗・タイムアウト・`agent` / `task` / `runSubagent` ツール不可 | **Skip-and-Report**: 当該タスクを `ERROR (error_reason: "dispatch failure")` 扱いでスキップし、`depends_on` で連結されたタスクを `TODO` で保留する。全タスクが `DISPATCH_FAILURE` になった場合（= `agent` ツール全体不可）は Phase Gate で STOP（ADR-015）。 |
+
+> **転送原則 (Relay Principle)**: easy-agent は `max_rejections` 超過時に独自の選択肢を作らず、call-hierarchy が提示した3択をそのままユーザーに渡す。これによりサブエージェントのフォールバック戦略とオーケストレーターの応答が矛盾しない（ADR-008 参照）。
+
+> **ERROR と max_rejections 超過の違い**: `ERROR` は「マネージャー内部の致命的失敗（再投入で改善する見込みが薄い）」。`max_rejections` 超過は「チェックリスト基準と成果物の乖離（要件・アプローチの再検討で解決可能）」。前者は STOP 寄り、後者はユーザー選択肢提示が標準対応。
+
+> **部分完了の取り扱い**: 一部タスクが APPROVED で残りが `max_rejections` 超過の場合も同様にユーザーへ転送する。APPROVED 済みタスクの成果物は保全した上で、失敗タスクのみを対象に選択肢を提示する。

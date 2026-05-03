@@ -161,6 +161,10 @@
                     },
                     "detail": {
                         "type": "string"
+                    },
+                    "is_critical": {
+                        "type": "boolean",
+                        "description": "チェックリスト項目に [critical] タグが付いていた場合 true。true かつ FAIL の場合はオーケストレーターが REJECTED 扱いとする。false または省略 かつ FAIL の場合は residual_risks として受理する。省略時は false 扱い（後方互換）。"
                     }
                 }
             }

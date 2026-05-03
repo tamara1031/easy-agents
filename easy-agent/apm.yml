@@ -1,5 +1,5 @@
 name: easy-agent
-version: 0.1.0
+version: 0.1.9
 description: ユニバーサルエントリーポイント。タスクを3軸（曖昧度×TaskScale×TaskType）で分類し Phase Pipeline を構成し、advisor・parliament・taskforce を組み合わせて自律的にタスクを完遂する
 author: tamara1031
 license: MIT
@@ -11,5 +11,6 @@ dependencies:
     - tamara1031/easy-agents/parliament
     - tamara1031/easy-agents/taskforce
     - tamara1031/easy-agents/memoir
+    - tamara1031/easy-agents/refine-loop
   mcp: []
 scripts: {}

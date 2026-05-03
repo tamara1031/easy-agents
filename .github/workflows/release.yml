@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  # Allow `Release - Prepare` (and humans) to dispatch this workflow on a
+  # specific tag ref. The default GITHUB_TOKEN cannot fan out a tag-push to
+  # other workflows, so the prepare workflow uses workflow_dispatch — one of
+  # the documented exceptions — to kick off the build after tagging.
+  workflow_dispatch:
+
+env:
+  APM_VERSION: "0.9.2"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install APM
+        run: |
+          curl -fsSL "https://github.com/microsoft/apm/releases/download/v${APM_VERSION}/apm-linux-x86_64.tar.gz" \
+            | tar xz -C /tmp
+          sudo mv /tmp/apm-linux-x86_64 /usr/local/lib/apm
+          sudo ln -s /usr/local/lib/apm/apm /usr/local/bin/apm
+          apm --version
+
+      - name: Install dependencies
+        run: apm install --no-policy
+
+      - name: Build plugin bundle
+        run: apm pack --format plugin --archive -o build/plugin/
+
+      - name: Build APM bundle
+        run: apm pack --format apm --archive -o build/apm/
+
+      - name: List artifacts
+        run: find build/ -name '*.tar.gz' | sort
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/plugin/*.tar.gz
+            build/apm/*.tar.gz
+          generate_release_notes: true
