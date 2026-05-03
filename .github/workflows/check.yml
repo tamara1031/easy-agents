@@ -1082,6 +1082,51 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint agent frontmatter required fields (ADR-024 Lint P)
+        run: |
+          # ADR-024 §3: Every */.apm/agents/*.agent.md must have a YAML
+          # frontmatter block (delimited by ---) that contains all four
+          # required fields: name, description, model, tools.
+          # Protects the prerequisite of Lint I/J (ADR-022) which reads the
+          # name: field to build the authoritative agent-name set; a missing
+          # name: would silently shrink the set and cause false negatives.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          REQUIRED = {"name", "description", "model", "tools"}
+          FIELD_RE = re.compile(r"^([a-zA-Z_-]+)\s*:", re.MULTILINE)
+          fail = False
+          for agent_path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = agent_path.read_text()
+              if not text.startswith("---"):
+                  print(
+                      f"::error file={agent_path}::no YAML frontmatter block found "
+                      f"(expected '---' at line 1) (ADR-024 Lint P)"
+                  )
+                  fail = True
+                  continue
+              try:
+                  end = text.index("---", 3)
+              except ValueError:
+                  print(
+                      f"::error file={agent_path}::frontmatter block is not closed "
+                      f"(missing closing '---') (ADR-024 Lint P)"
+                  )
+                  fail = True
+                  continue
+              fm_text = text[3:end]
+              declared = {m.group(1) for m in FIELD_RE.finditer(fm_text)}
+              missing = REQUIRED - declared
+              if missing:
+                  print(
+                      f"::error file={agent_path}::frontmatter missing required "
+                      f"field(s): {sorted(missing)} (ADR-024 Lint P)"
+                  )
+                  fail = True
+              else:
+                  print(f"  ✓ {agent_path}: frontmatter has all required fields")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 
