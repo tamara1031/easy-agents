@@ -1011,6 +1011,122 @@ jobs:
 
           [ "$fail" -eq 0 ]
 
+      - name: Lint apm.yml version uniformity (ADR-024 Lint N)
+        run: |
+          # ADR-024 §1: All */apm.yml sub-packages and the root apm.yml must
+          # declare the same version: value.  CLAUDE.md explicitly mandates
+          # "ルート apm.yml と全サブパッケージの apm.yml は同一の version: を
+          # 共有し、同時にバンプする".  This lint catches silent version drift
+          # that can occur when a package is manually bumped outside the
+          # Release-Prepare workflow.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          VERSION_RE = re.compile(r"^version:\s*(.+)", re.MULTILINE)
+          root_text = pathlib.Path("apm.yml").read_text()
+          m = VERSION_RE.search(root_text)
+          if not m:
+              print("::error file=apm.yml::root apm.yml has no 'version:' field (ADR-024 Lint N)")
+              sys.exit(1)
+          baseline = m.group(1).strip()
+          print(f"  baseline version: {baseline} (from apm.yml)")
+          fail = False
+          for pkg_yml in sorted(pathlib.Path(".").glob("*/apm.yml")):
+              text = pkg_yml.read_text()
+              m = VERSION_RE.search(text)
+              if not m:
+                  print(f"::error file={pkg_yml}::missing 'version:' field (ADR-024 Lint N)")
+                  fail = True
+                  continue
+              ver = m.group(1).strip()
+              if ver != baseline:
+                  print(
+                      f"::error file={pkg_yml}::version '{ver}' differs from root "
+                      f"baseline '{baseline}' — bump all apm.yml files together "
+                      f"using Release-Prepare workflow (ADR-024 Lint N)"
+                  )
+                  fail = True
+              else:
+                  print(f"  ✓ {pkg_yml}: version '{ver}' matches baseline")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint apm.yml type:hybrid enforcement (ADR-024 Lint O)
+        run: |
+          # ADR-024 §2: All sub-package */apm.yml files must declare type: hybrid.
+          # CLAUDE.md states "apm.yml の type フィールドは必ず hybrid にする".
+          # The root apm.yml does not carry a type: field by design (it is a
+          # meta-manifest, not an authored package) and is excluded from this check.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          TYPE_RE = re.compile(r"^type:\s*(.+)", re.MULTILINE)
+          fail = False
+          for pkg_yml in sorted(pathlib.Path(".").glob("*/apm.yml")):
+              text = pkg_yml.read_text()
+              m = TYPE_RE.search(text)
+              if not m:
+                  print(
+                      f"::error file={pkg_yml}::missing 'type:' field — "
+                      f"add 'type: hybrid' (ADR-024 Lint O, CLAUDE.md)"
+                  )
+                  fail = True
+                  continue
+              value = m.group(1).strip()
+              if value != "hybrid":
+                  print(
+                      f"::error file={pkg_yml}::type is '{value}' — "
+                      f"must be 'hybrid' (ADR-024 Lint O, CLAUDE.md)"
+                  )
+                  fail = True
+              else:
+                  print(f"  ✓ {pkg_yml}: type: hybrid")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint agent frontmatter required fields (ADR-024 Lint P)
+        run: |
+          # ADR-024 §3: Every */.apm/agents/*.agent.md must have a YAML
+          # frontmatter block (delimited by ---) that contains all four
+          # required fields: name, description, model, tools.
+          # Protects the prerequisite of Lint I/J (ADR-022) which reads the
+          # name: field to build the authoritative agent-name set; a missing
+          # name: would silently shrink the set and cause false negatives.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          REQUIRED = {"name", "description", "model", "tools"}
+          FIELD_RE = re.compile(r"^([a-zA-Z_-]+)\s*:", re.MULTILINE)
+          fail = False
+          for agent_path in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = agent_path.read_text()
+              if not text.startswith("---"):
+                  print(
+                      f"::error file={agent_path}::no YAML frontmatter block found "
+                      f"(expected '---' at line 1) (ADR-024 Lint P)"
+                  )
+                  fail = True
+                  continue
+              try:
+                  end = text.index("---", 3)
+              except ValueError:
+                  print(
+                      f"::error file={agent_path}::frontmatter block is not closed "
+                      f"(missing closing '---') (ADR-024 Lint P)"
+                  )
+                  fail = True
+                  continue
+              fm_text = text[3:end]
+              declared = {m.group(1) for m in FIELD_RE.finditer(fm_text)}
+              missing = REQUIRED - declared
+              if missing:
+                  print(
+                      f"::error file={agent_path}::frontmatter missing required "
+                      f"field(s): {sorted(missing)} (ADR-024 Lint P)"
+                  )
+                  fail = True
+              else:
+                  print(f"  ✓ {agent_path}: frontmatter has all required fields")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 
