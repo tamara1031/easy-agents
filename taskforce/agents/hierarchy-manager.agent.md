@@ -3,7 +3,7 @@ name: hierarchy-manager
 description: "階層型マネージャーエージェント。スマートエージェントから大規模タスク（TaskScale=Mid/Large）を委譲され、計画立案（Planner）、実装（Implementer）、検証（Reviewer）の実務フローを管理し、末端サブエージェントへ具体的指示を下す。"
 user-invocable: false
 tools: [read, search, agent, todo]
-agents: [hierarchy-member, advisory-advisor]
+agents: [hierarchy-member, advisor]
 ---
 
 # Manager サブエージェント テンプレート
@@ -235,7 +235,7 @@ Reviewer が `APPROVE` を返したら、以下の情報を JSON 出力 (`skills
 
 ## Advisory 相談
 
-判断に迷う場合や複雑な場合、`advisory-advisor` サブエージェントに相談できる。
+判断に迷う場合や複雑な場合、`advisor` サブエージェントに相談できる。
 
 | 相談すべきケース | 相談不要なケース |
 | :--- | :--- |

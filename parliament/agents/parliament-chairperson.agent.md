@@ -158,7 +158,7 @@ tools: [read, search, agent]
 
 ## Advisory 相談
 
-複雑な判断が必要な場合、`advisory-advisor` サブエージェントに相談できる。
+複雑な判断が必要な場合、`advisor` サブエージェントに相談できる。
 
 | 相談すべきケース | 相談不要なケース |
 | :--- | :--- |
@@ -166,7 +166,7 @@ tools: [read, search, agent]
 | チェックリストの解釈が分かれる場合 | 単純な Typo の修正 |
 | 重大なアーキテクチャ上の懸念 | レビューの PASS/FAIL が明白 |
 
-相談時は `skills/call-advisory/skill.md` の `prompt` セクションに従うこと。
+相談時は `skills/call-advisor/SKILL.md` の `prompt` セクションに従うこと。
 相談はタスクあたり最大 2 回までに留める。
 
 ## Multi-Context Window State Management (状態管理)
