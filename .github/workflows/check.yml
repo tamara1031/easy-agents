@@ -899,6 +899,75 @@ jobs:
           sys.exit(1)
           PY
 
+      - name: Lint is_critical semantics in Caller Response Contracts (ADR-018/019 Lint L)
+        run: |
+          # ADR-018 and ADR-019 extend the quality gate model with is_critical: boolean
+          # so callers can distinguish blocking from best-effort checklist failures.
+          # For this model to be useful, the Caller Response Contract section of each
+          # call-* SKILL.md must explain to callers how to handle is_critical.
+          # This lint verifies the field is documented in the CRC sections of
+          # call-hierarchy (ADR-018) and call-parliament (ADR-019) SKILL.md files.
+          python3 - <<'PY'
+          import re, sys
+
+          SKILLS = [
+              {
+                  "path":  "taskforce/.apm/skills/call-hierarchy/SKILL.md",
+                  "label": "call-hierarchy",
+                  "adr":   "ADR-018",
+              },
+              {
+                  "path":  "parliament/.apm/skills/call-parliament/SKILL.md",
+                  "label": "call-parliament",
+                  "adr":   "ADR-019",
+              },
+          ]
+
+          CRC_HEADING_RE = re.compile(
+              r"^##+ .*(Caller Response Contract|呼び出し元の応答コントラクト)",
+              re.MULTILINE,
+          )
+          NEXT_H2_RE = re.compile(r"^## ", re.MULTILINE)
+
+          fail = False
+          for skill in SKILLS:
+              try:
+                  text = open(skill["path"]).read()
+              except FileNotFoundError:
+                  print(f"::error file={skill['path']}::file not found")
+                  fail = True
+                  continue
+
+              m = CRC_HEADING_RE.search(text)
+              if not m:
+                  print(
+                      f"::error file={skill['path']}::Caller Response Contract section not found "
+                      f"(ADR-009 prerequisite for Lint L)"
+                  )
+                  fail = True
+                  continue
+
+              # Scope the check to the CRC section only (stop at next H2)
+              next_h2 = NEXT_H2_RE.search(text, m.end())
+              crc_text = text[m.start() : next_h2.start()] if next_h2 else text[m.start():]
+
+              if "is_critical" not in crc_text:
+                  print(
+                      f"::error file={skill['path']}::{skill['label']} Caller Response Contract "
+                      f"does not mention 'is_critical' — document how callers must interpret "
+                      f"is_critical: true/false when routing APPROVED vs. residual_risks "
+                      f"({skill['adr']} Lint L)"
+                  )
+                  fail = True
+              else:
+                  print(
+                      f"  ✓ {skill['path']}: 'is_critical' present in Caller Response Contract "
+                      f"({skill['adr']})"
+                  )
+
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 
