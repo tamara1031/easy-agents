@@ -58,7 +58,7 @@ tools: [read, search, agent]
 | `Performance Engineer` (性能専門家) | 非機能要件の重要度が高い場合 |
 | `Security Specialist` (セキュリティ専門家) | セキュリティ上の懸念が大きい場合 |
 
-追加メンバーも同じく `agents/parliament-member_agent.md` テンプレートを使用して生成すること。
+追加メンバーも同じく `agents/parliament-member.agent.md` テンプレートを使用して生成すること。
 
 各ペルソナには議題の文脈に応じた具体的な専門性を付与すること（例：セキュリティ議論なら「OWASP Top 10 の専門家」など）。
 
