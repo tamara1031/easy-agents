@@ -662,6 +662,69 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint agent(subagent_type) name references (ADR-022 Lint I)
+        run: |
+          # Every agent(subagent_type: "X") / Agent(subagent_type: "X") call in
+          # any .apm/**/*.md file must reference an agent name that exists in some
+          # package's .apm/agents/*.agent.md (name: frontmatter field).
+          # This is the Claude Code invocation pattern; the sibling lint above covers
+          # VS Code runSubagent(agentName: "X").  Template placeholders whose value
+          # starts with { are excluded by the regex character class.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          SUBAGENT_TYPE_RE = re.compile(r'subagent_type:\s*["\']([A-Za-z0-9_-]+)["\']')
+          agent_names = set()
+          for agent_file in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = agent_file.read_text()
+              m = re.search(r'^name:\s*["\']?([A-Za-z0-9_-]+)["\']?', text, re.MULTILINE)
+              if m:
+                  agent_names.add(m.group(1))
+          fail = False
+          for md_file in sorted(pathlib.Path(".").glob("*/.apm/**/*.md")):
+              text = md_file.read_text()
+              for m in SUBAGENT_TYPE_RE.finditer(text):
+                  agent_name = m.group(1)
+                  if agent_name not in agent_names:
+                      print(f"::error file={md_file}::agent(subagent_type: '{agent_name}') references "
+                            f"undefined agent — add {agent_name}.agent.md to the appropriate package")
+                      fail = True
+                  else:
+                      print(f"  ✓ {md_file}: subagent_type='{agent_name}'")
+          sys.exit(1 if fail else 0)
+          PY
+
+      - name: Lint task(agent_type my-copilot:) name references (ADR-022 Lint J)
+        run: |
+          # Every task(agent_type: "my-copilot:X") call in any .apm/**/*.md file
+          # must reference an agent name that exists in some package's
+          # .apm/agents/*.agent.md (name: frontmatter field).
+          # This is the Copilot CLI invocation pattern (ADR-022); the sibling lints
+          # cover VS Code runSubagent and Claude Code agent(subagent_type).
+          # Template placeholders like {agent-name} are excluded by the regex
+          # character class ([A-Za-z0-9_-]+ does not match '{').
+          python3 - <<'PY'
+          import re, sys, pathlib
+          COPILOT_RE = re.compile(r'agent_type:\s*["\']my-copilot:([A-Za-z0-9_-]+)["\']')
+          agent_names = set()
+          for agent_file in sorted(pathlib.Path(".").glob("*/.apm/agents/*.agent.md")):
+              text = agent_file.read_text()
+              m = re.search(r'^name:\s*["\']?([A-Za-z0-9_-]+)["\']?', text, re.MULTILINE)
+              if m:
+                  agent_names.add(m.group(1))
+          fail = False
+          for md_file in sorted(pathlib.Path(".").glob("*/.apm/**/*.md")):
+              text = md_file.read_text()
+              for m in COPILOT_RE.finditer(text):
+                  agent_name = m.group(1)
+                  if agent_name not in agent_names:
+                      print(f"::error file={md_file}::task(agent_type: 'my-copilot:{agent_name}') "
+                            f"references undefined agent — add {agent_name}.agent.md to the appropriate package")
+                      fail = True
+                  else:
+                      print(f"  ✓ {md_file}: agent_type=my-copilot:'{agent_name}'")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Lint Context Window Management declaration (ADR-013)
         run: |
           # Every call-*/SKILL.md must declare a Context Window Management (or
