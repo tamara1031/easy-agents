@@ -1050,6 +1050,38 @@ jobs:
           sys.exit(1 if fail else 0)
           PY
 
+      - name: Lint apm.yml type:hybrid enforcement (ADR-024 Lint O)
+        run: |
+          # ADR-024 §2: All sub-package */apm.yml files must declare type: hybrid.
+          # CLAUDE.md states "apm.yml の type フィールドは必ず hybrid にする".
+          # The root apm.yml does not carry a type: field by design (it is a
+          # meta-manifest, not an authored package) and is excluded from this check.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          TYPE_RE = re.compile(r"^type:\s*(.+)", re.MULTILINE)
+          fail = False
+          for pkg_yml in sorted(pathlib.Path(".").glob("*/apm.yml")):
+              text = pkg_yml.read_text()
+              m = TYPE_RE.search(text)
+              if not m:
+                  print(
+                      f"::error file={pkg_yml}::missing 'type:' field — "
+                      f"add 'type: hybrid' (ADR-024 Lint O, CLAUDE.md)"
+                  )
+                  fail = True
+                  continue
+              value = m.group(1).strip()
+              if value != "hybrid":
+                  print(
+                      f"::error file={pkg_yml}::type is '{value}' — "
+                      f"must be 'hybrid' (ADR-024 Lint O, CLAUDE.md)"
+                  )
+                  fail = True
+              else:
+                  print(f"  ✓ {pkg_yml}: type: hybrid")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 
