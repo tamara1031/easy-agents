@@ -1011,6 +1011,45 @@ jobs:
 
           [ "$fail" -eq 0 ]
 
+      - name: Lint apm.yml version uniformity (ADR-024 Lint N)
+        run: |
+          # ADR-024 §1: All */apm.yml sub-packages and the root apm.yml must
+          # declare the same version: value.  CLAUDE.md explicitly mandates
+          # "ルート apm.yml と全サブパッケージの apm.yml は同一の version: を
+          # 共有し、同時にバンプする".  This lint catches silent version drift
+          # that can occur when a package is manually bumped outside the
+          # Release-Prepare workflow.
+          python3 - <<'PY'
+          import re, sys, pathlib
+          VERSION_RE = re.compile(r"^version:\s*(.+)", re.MULTILINE)
+          root_text = pathlib.Path("apm.yml").read_text()
+          m = VERSION_RE.search(root_text)
+          if not m:
+              print("::error file=apm.yml::root apm.yml has no 'version:' field (ADR-024 Lint N)")
+              sys.exit(1)
+          baseline = m.group(1).strip()
+          print(f"  baseline version: {baseline} (from apm.yml)")
+          fail = False
+          for pkg_yml in sorted(pathlib.Path(".").glob("*/apm.yml")):
+              text = pkg_yml.read_text()
+              m = VERSION_RE.search(text)
+              if not m:
+                  print(f"::error file={pkg_yml}::missing 'version:' field (ADR-024 Lint N)")
+                  fail = True
+                  continue
+              ver = m.group(1).strip()
+              if ver != baseline:
+                  print(
+                      f"::error file={pkg_yml}::version '{ver}' differs from root "
+                      f"baseline '{baseline}' — bump all apm.yml files together "
+                      f"using Release-Prepare workflow (ADR-024 Lint N)"
+                  )
+                  fail = True
+              else:
+                  print(f"  ✓ {pkg_yml}: version '{ver}' matches baseline")
+          sys.exit(1 if fail else 0)
+          PY
+
       - name: Install dependencies
         run: apm install --no-policy
 

@@ -29,3 +29,4 @@ easy-agents-hub の主要アーキテクチャ決定の記録。
 | [ADR-021](./ADR-021-canonical-source-section-registry.md) | Canonical Source Section Registry Protocol (アセンブルビュー双方向 CI 保護) | Accepted |
 | [ADR-022](./ADR-022-agent-invocation-name-coverage.md) | Agent Invocation Name Coverage (全呼び出しパターンのエージェント名検証) | Accepted |
 | [ADR-023](./ADR-023-critical-quality-model-ci-coverage.md) | CI Lint Coverage for [critical] Quality Model and Residual Risks Bridge (ADR-018/019/020 退行保護) | Accepted |
+| [ADR-024](./ADR-024-apm-manifest-integrity.md) | APM Manifest & Agent Frontmatter Integrity CI 保護 (version uniformity / type: hybrid / frontmatter 必須フィールド) | Accepted |
